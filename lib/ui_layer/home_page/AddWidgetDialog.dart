@@ -344,7 +344,7 @@ class _AddWidgetDialogState extends State<AddWidgetDialog> {
       );
     }
 
-    return Container(
+    return SizedBox(
       height: 400,
       child: GridView.builder(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -422,7 +422,7 @@ class _AddWidgetDialogState extends State<AddWidgetDialog> {
   }
 
   Widget _buildCustomUrlForm(BuildContext context, ColorScheme colorScheme) {
-    return Container(
+    return SizedBox(
       height: 450, // Fixed height for scrollable content
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),

@@ -208,7 +208,7 @@ class ThemeManager {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
       ),
-      child: Container(width: width * 0.5, child: Text(name, maxLines: 1)),
+      child: SizedBox(width: width * 0.5, child: Text(name, maxLines: 1)),
 
       onPressed: () {
         Provider.of<ThemeStore>(context, listen: false).loadTheme(assetPath);

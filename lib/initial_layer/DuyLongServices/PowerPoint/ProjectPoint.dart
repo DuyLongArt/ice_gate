@@ -13,7 +13,7 @@ class ProjectPoint {
   static const double taskAllDoneBonus = 3.0; // 100% tasks done
 
   // Project Points
-  static const double projectBase = 5.0;
+  static const double projectBase = 50.0;
   static const double projectManyTasksBonus = 2.0; // >= 5 tasks
   static const double projectLotsTasksBonus = 3.0; // >= 10 tasks
   static const double projectDocBonus = 2.0; // >= 3 notes
@@ -37,7 +37,7 @@ class ProjectPoint {
   // Action                    | Points
   // ─────────────────────────────────────────────────
   // Complete a task           | 2 base + up to 4 bonus
-  // Complete a project        | 5 base + up to 14 bonus
+  // Complete a project        | 50 base + up to 14 bonus
   // Daily 1 task              | +1
   // Daily 3 tasks             | +2 (total 3)
   // Daily 5 tasks             | +3 (total 6)

@@ -104,7 +104,7 @@ class _MainButtonState extends State<MainButton>
     Overlay.of(context).insert(_overlayEntry!);
     _controller.forward();
     setState(() => isDialActive = true);
-    HapticFeedback.lightImpact();
+    HapticFeedback.heavyImpact();
   }
 
   void _hideOverlay() {

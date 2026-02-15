@@ -10,7 +10,6 @@ import 'package:ice_shield/data_layer/Protocol/User/UserAccountProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/EmailAddressProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/ProfileProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/CVAddressProtocol.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreData.dart';
 import 'dart:io'; // For File
 import 'dart:math'; // For Random() used in DAOs
 import 'dart:convert';
@@ -208,6 +207,10 @@ class PersonsTable extends Table {
   TextColumn get gender => text().nullable()(); // 'male', 'female', etc.
   TextColumn get phoneNumber => text().withLength(max: 20).nullable()();
   TextColumn get profileImageUrl => text().nullable()();
+  TextColumn get relationship => text().withDefault(
+    const Constant('none'),
+  )(); // 'friend', 'dating', 'family'
+  IntColumn get affection => integer().withDefault(const Constant(0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
@@ -507,6 +510,11 @@ class HealthMetricsTable extends Table {
   IntColumn get caloriesConsumed => integer().withDefault(const Constant(0))();
   IntColumn get caloriesBurned => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {personID, date},
+  ];
 }
 
 @DataClassName('MealData')
@@ -622,6 +630,23 @@ class ScoreDAO extends DatabaseAccessor<AppDatabase> with _$ScoreDAOMixin {
         ScoresTableCompanion.insert(
           personID: personID,
           careerGlobalScore: Value(points),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
+
+  Future<void> updateSocialScore(int personID, double score) async {
+    final existing = await getScoreByPersonID(personID);
+    if (existing != null) {
+      await update(scoresTable).replace(
+        existing.copyWith(socialGlobalScore: score, updatedAt: DateTime.now()),
+      );
+    } else {
+      await into(scoresTable).insert(
+        ScoresTableCompanion.insert(
+          personID: personID,
+          socialGlobalScore: Value(score),
           updatedAt: Value(DateTime.now()),
         ),
       );
@@ -844,7 +869,10 @@ class PersonManagementDAO extends DatabaseAccessor<AppDatabase>
   PersonManagementDAO(super.db);
 
   // Persons
-  Future<int> createPerson(PersonProtocol person) {
+  Future<int> createPerson(
+    PersonProtocol person, {
+    String? relationship,
+  }) async {
     final companion = PersonsTableCompanion.insert(
       personID: Value(person.personID),
       firstName: person.firstName,
@@ -853,11 +881,21 @@ class PersonManagementDAO extends DatabaseAccessor<AppDatabase>
       gender: Value(person.gender),
       phoneNumber: Value(person.phoneNumber),
       profileImageUrl: Value(person.profileImageUrl),
+      // relationship: Value(relationship ?? 'none'), // Removed because not generated
       isActive: Value(person.isActive),
       createdAt: Value(DateTime.now()),
       updatedAt: Value(DateTime.now()),
     );
-    return into(personsTable).insert(companion);
+    final id = await into(personsTable).insert(companion);
+    if (relationship != null) {
+      await customUpdate(
+        'UPDATE persons_table SET relationship = ? WHERE person_i_d = ?',
+        variables: [Variable.withString(relationship), Variable.withInt(id)],
+        updates: {personsTable},
+        updateKind: UpdateKind.update,
+      );
+    }
+    return id;
   }
 
   Future<int> createMailAddress(EmailAddressProtocol email) {
@@ -878,9 +916,57 @@ class PersonManagementDAO extends DatabaseAccessor<AppDatabase>
   Future<PersonData?> getPersonById(int personID) => (select(
     personsTable,
   )..where((t) => t.personID.equals(personID))).getSingleOrNull();
-
   Future<void> updatePerson(PersonData person) =>
       update(personsTable).replace(person);
+
+  Stream<List<SocialContact>> getContactsByRelationship(String type) {
+    return customSelect(
+      'SELECT * FROM persons_table WHERE relationship = ?',
+      variables: [Variable.withString(type)],
+      readsFrom: {personsTable},
+    ).watch().map((rows) {
+      return rows.map((row) {
+        final person = personsTable.map(row.data);
+        // Manually extract affection since PersonData might not have it generated yet
+        final affection = row.data['affection'] as int? ?? 0;
+        return SocialContact(person: person, affection: affection);
+      }).toList();
+    });
+  }
+
+  Stream<List<SocialContact>> getAllContacts() {
+    return customSelect(
+      "SELECT * FROM persons_table WHERE relationship != 'none' AND relationship != 'me'",
+      readsFrom: {personsTable},
+    ).watch().map((rows) {
+      return rows.map((row) {
+        final person = personsTable.map(row.data);
+        final affection = row.data['affection'] as int? ?? 0;
+        return SocialContact(person: person, affection: affection);
+      }).toList();
+    });
+  }
+
+  Future<void> increaseAffection(int personId, {int amount = 1}) async {
+    await customUpdate(
+      'UPDATE persons_table SET affection = affection + ? WHERE person_i_d = ?',
+      variables: [Variable.withInt(amount), Variable.withInt(personId)],
+      updates: {personsTable},
+      updateKind: UpdateKind.update,
+    );
+  }
+
+  Future<void> updateRelationship(int personId, String relationship) async {
+    await customUpdate(
+      'UPDATE persons_table SET relationship = ? WHERE person_i_d = ?',
+      variables: [
+        Variable.withString(relationship),
+        Variable.withInt(personId),
+      ],
+      updates: {personsTable},
+      updateKind: UpdateKind.update,
+    );
+  }
 
   // Emails
   Future<int> addEmail(EmailAddressProtocol email, {int? overridePersonID}) {
@@ -1315,17 +1401,25 @@ class HealthMetricsDAO extends DatabaseAccessor<AppDatabase>
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    return (select(healthMetricsTable)..where(
-          (t) =>
-              t.personID.equals(personID) &
-              t.date.isBiggerOrEqualValue(startOfDay) &
-              t.date.isSmallerThanValue(endOfDay),
-        ))
+    return (select(healthMetricsTable)
+          ..where(
+            (t) =>
+                t.personID.equals(personID) &
+                t.date.isBiggerOrEqualValue(startOfDay) &
+                t.date.isSmallerThanValue(endOfDay),
+          )
+          ..limit(1))
         .getSingleOrNull();
   }
 
   Future<int> insertOrUpdateMetrics(HealthMetricsTableCompanion entry) {
-    return into(healthMetricsTable).insertOnConflictUpdate(entry);
+    HealthMetricsTableCompanion finalEntry = entry;
+    if (entry.date.present) {
+      final d = entry.date.value;
+      final normalized = DateTime(d.year, d.month, d.day);
+      finalEntry = entry.copyWith(date: Value(normalized));
+    }
+    return into(healthMetricsTable).insertOnConflictUpdate(finalEntry);
   }
 
   Future<int> deleteMetricsForPerson(int personID) {
@@ -1350,11 +1444,14 @@ class HealthMealDAO extends DatabaseAccessor<AppDatabase>
   // Days (Meal Logs)
   Future<int> insertDay(DaysTableCompanion day) => into(daysTable).insert(day);
   Future<double> getCaloriesByDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
     final rows =
         await (select(mealsTable)..where(
-              (tbl) => tbl.eatenAt.date.equals(
-                date.toIso8601String().substring(0, 10),
-              ),
+              (tbl) =>
+                  tbl.eatenAt.isBiggerOrEqualValue(startOfDay) &
+                  tbl.eatenAt.isSmallerThanValue(endOfDay),
             ))
             .get();
 
@@ -1416,6 +1513,13 @@ class DayWithMeal {
 }
 
 // --- 5. Database Connection Helper ---
+
+class SocialContact {
+  final PersonData person;
+  final int affection;
+
+  SocialContact({required this.person, required this.affection});
+}
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
@@ -1495,7 +1599,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9; // Increment schema version
+  int get schemaVersion => 12; // Increment schema version
 
   // Migration strategy would be needed here for a real app update
   @override
@@ -1555,6 +1659,55 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 9) {
           await m.createTable(transactionsTable);
+        }
+
+        if (from < 10) {
+          // Attempt to clean duplicates (exact matches only for safety)
+          try {
+            await customStatement(
+              'DELETE FROM health_metrics_table WHERE metric_i_d NOT IN (SELECT MIN(metric_i_d) FROM health_metrics_table GROUP BY person_i_d, date)',
+            );
+          } catch (e) {
+            print('Error deleting duplicates: $e');
+          }
+
+          // Add unique index (this mimics uniqueKeys logic for the DB engine)
+          try {
+            await customStatement(
+              'CREATE UNIQUE INDEX IF NOT EXISTS idx_health_metrics_unique ON health_metrics_table (person_i_d, date)',
+            );
+          } catch (e) {
+            print('Error creating unique index: $e');
+          }
+        }
+
+        if (from < 11) {
+          try {
+            await customStatement(
+              "ALTER TABLE persons_table ADD COLUMN relationship TEXT DEFAULT 'none';",
+            );
+          } catch (e) {
+            print('Error adding relationship column: $e');
+          }
+        }
+        if (from < 12) {
+          try {
+            await customStatement(
+              "ALTER TABLE persons_table ADD COLUMN affection INTEGER DEFAULT 0;",
+            );
+          } catch (e) {
+            print('Error adding affection column: $e');
+          }
+        }
+      },
+      beforeOpen: (details) async {
+        // Ensure affection column exists (handles case where migration was skipped)
+        try {
+          await customStatement(
+            "ALTER TABLE persons_table ADD COLUMN affection INTEGER DEFAULT 0;",
+          );
+        } catch (_) {
+          // Column already exists, ignore
         }
       },
     );

@@ -7,7 +7,7 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.
 import 'package:provider/provider.dart';
 import 'package:flutter/widgets.dart'; // For BuildContext
 
-import 'package:ice_shield/initial_layer/BusinessLogic/ProjectPoint.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/ProjectPoint.dart';
 
 class ProjectBlock {
   final projects = listSignal<ProjectProtocol>([]);

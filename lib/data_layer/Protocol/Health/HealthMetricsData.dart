@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
+import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:provider/provider.dart' show ReadContext;
 
 /// Protocol for managing health metrics data
@@ -238,28 +240,63 @@ class HealthMetricsData {
     DateTime day,
     BuildContext context,
   ) async {
-    // 1. Get the DAO from the context
-    final healthFoodDAO = context.read<HealthMealDAO>();
+    // 1. Get the DAOs from the context
+    final healthMealDAO = context.read<HealthMealDAO>();
+    final healthMetricsDAO = context.read<HealthMetricsDAO>();
 
     // 2. Fetch data from the database
-    final healthMetricByDay = await healthFoodDAO.getHealthMetricByDay(day);
-    final calories = await healthFoodDAO.getCaloriesByDate(day);
-    // 3. Handle the "Empty State" (Important!)
-    // If the list is empty, use 0 or a placeholder value
-    final String caloriesValue = healthMetricByDay.isNotEmpty
-        ? healthMetricByDay[0].meal.calories.toString()
-        : '0';
+    // Assume Person ID 1 for single-user apps
+    final metricsLocal = await healthMetricsDAO.getMetricsForDate(1, day);
+    final calories = await healthMealDAO.getCaloriesByDate(day);
+
+    // 3. Fetch live steps from HealthService (Pedometer)
+    int currentSteps = metricsLocal?.steps ?? 0;
+
+    // Only fetch live steps if we are looking at TODAY's data
+    final now = DateTime.now();
+    final isToday =
+        day.year == now.year && day.month == now.month && day.day == now.day;
+
+    if (isToday) {
+      try {
+        final liveSteps = await HealthService.fetchStepCount();
+        if (liveSteps > currentSteps) {
+          currentSteps = liveSteps;
+
+          // Sync back to DB
+          if (metricsLocal != null) {
+            // Update existing
+            await healthMetricsDAO.insertOrUpdateMetrics(
+              metricsLocal.toCompanion(true).copyWith(steps: Value(liveSteps)),
+            );
+          } else {
+            // Insert new
+            await healthMetricsDAO.insertOrUpdateMetrics(
+              HealthMetricsTableCompanion.insert(
+                personID: 1, // Default user
+                date: day,
+                steps: Value(liveSteps),
+                updatedAt: Value(DateTime.now()),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint("Error syncing live steps: $e");
+      }
+    }
+
+    final caloriesValue = calories.toString();
 
     // 4. Create and return the object directly
-    // No need to declare a Future variable here; the 'async' keyword handles it.
     return {
       'food': HealthMetric(
         id: 'food',
         name: 'Food',
-        value: calories.toString(),
+        value: caloriesValue,
         icon: Icons.fastfood,
         color: const Color.fromARGB(255, 95, 202, 19),
-        unit: 'kcal', // Changed from 'kg' to 'kcal' since it's food!
+        unit: 'kcal',
         subtitle: 'Health first',
         trend: '0kcal',
         trendPositive: null,
@@ -268,12 +305,12 @@ class HealthMetricsData {
       'steps': HealthMetric(
         id: 'steps',
         name: 'Steps',
-        value: caloriesValue,
+        value: currentSteps.toString(),
         icon: Icons.run_circle,
         color: const Color(0xFF9C27B0),
-        unit: 'kcal', // Changed from 'kg' to 'kcal' since it's food!
+        unit: 'steps',
         subtitle: '100 meters define my line',
-        trend: '0kcal',
+        trend: '0steps',
         trendPositive: null,
         detailPage: '/health/steps',
       ),

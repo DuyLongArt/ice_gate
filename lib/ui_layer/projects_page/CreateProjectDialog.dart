@@ -52,12 +52,16 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
       final dateAdded = DateTime.now().toIso8601String();
 
       // 0. Create Project Entity
-      await projectBlock.createProject(name, description, null);
+      final projectId = await projectBlock.createProject(
+        name,
+        description,
+        null,
+      );
 
       // 1. Create InternalWidgetProtocol
       final internalWidget = InternalWidgetProtocol(
         name: name,
-        url: url.isNotEmpty ? url : '/project/$widgetID',
+        url: url.isNotEmpty ? url : '/project/$projectId',
         alias: name.toLowerCase().replaceAll(' ', '_'),
         widgetID: widgetID,
         dateAdded: dateAdded,

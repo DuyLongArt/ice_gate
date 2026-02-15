@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/Project/ProjectProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/Const.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
@@ -42,7 +43,7 @@ class ProjectDetailsPage extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Project completed! +5 points awarded.',
+                            'Project completed! ${PROJECT_SCORE_INCREMENT} points awarded.',
                           ),
                           duration: Duration(seconds: 1),
                         ),

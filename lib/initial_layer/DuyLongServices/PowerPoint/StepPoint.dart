@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 class StepPoint {
   static double calculateBonus(int steps, double calories) {

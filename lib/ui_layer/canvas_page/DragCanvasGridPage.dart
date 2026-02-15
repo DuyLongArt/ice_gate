@@ -194,32 +194,7 @@ class _DragCanvasState extends State<DragCanvas> {
 
         const SizedBox(height: 16),
 
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: () {
-                  widgetBlock.resetGrid();
-                  setState(() => isClick = !isClick);
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text("Reset Layout"),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withOpacity(0.7),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
+        
         Watch((context) {
           final isStoreOpen = DragCanvasGrid.isOpenStore.value;
           return AnimatedSwitcher(

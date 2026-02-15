@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:signals/signals.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
-import 'package:ice_shield/initial_layer/BusinessLogic/ProjectPoint.dart';
+import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/ProjectPoint.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 
 class GrowthBlock {

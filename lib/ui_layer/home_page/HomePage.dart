@@ -25,6 +25,9 @@ import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
 import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
 import 'package:ice_shield/ui_layer/projects_page/CreateProjectDialog.dart';
 import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
+import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
+import 'package:ice_shield/ui_layer/projects_page/ProjectDetailsPage.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
 
 class HomePage extends StatefulWidget {
   final String title;
@@ -59,7 +62,12 @@ class HomePage extends StatefulWidget {
           backgroundColor: Colors.blueAccent,
           tooltip: "View Projects",
           label: "Projects",
-          onPressed: () => context.go('/projects'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProjectsPage()),
+            );
+          },
         ),
         SubButton(
           icon: Icons.note_add_rounded,
@@ -198,7 +206,45 @@ class _HomePageState extends State<HomePage> {
 
   // 1. Handles the actual step count data
   void _navigateInternalUrl(String name) {
-    context.push('$name');
+    if (name == '/projects') {
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const ProjectsPage()));
+      return;
+    }
+
+    if (name.startsWith('/project/')) {
+      final parts = name.split('/');
+      if (parts.length > 2) {
+        final id = int.tryParse(parts.last);
+        if (id != null) {
+          try {
+            final project = context
+                .read<ProjectBlock>()
+                .projects
+                .value
+                .firstWhere((p) => p.projectID == id);
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ProjectDetailsPage(project: project),
+              ),
+            );
+            return;
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Project $id not found, opening Hub instead'),
+              ),
+            );
+          }
+        }
+      }
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (context) => const ProjectsPage()));
+      return;
+    }
+    context.push(name);
   }
 
   void _showAddPluginDialog(BuildContext context) {
@@ -221,8 +267,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-      sizeOfWidget=MediaQuery.of(context).size.width*0.25;
-    sizeOfWidget=sizeOfWidget.clamp(100, 120);
+    sizeOfWidget = MediaQuery.of(context).size.width * 0.25;
+    sizeOfWidget = sizeOfWidget.clamp(100, 120);
     return SwipeablePage(
       onSwipe: () => Navigator.maybePop(context), // Use maybePop for safety
       direction: SwipeablePageDirection.leftToRight,
@@ -687,23 +733,43 @@ class _HomePageState extends State<HomePage> {
                         ),
 
                         child: Column(
+                          key: ValueKey(
+                            title,
+                          ), // Ensure state preservation for animation
                           children: [
-                            Text(
-                              "LV ${(scoreData / 100).floor() + 1}",
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w900,
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(
+                                begin: 0,
+                                end: (scoreData / 100).floor() + 1,
                               ),
+                              duration: const Duration(milliseconds: 1000),
+                              curve: Curves.easeOutExpo,
+                              builder: (context, value, child) {
+                                return Text(
+                                  "LV ${value.toInt()}",
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              "P: ${(scoreData).toStringAsFixed(1)}",
-                              style: TextStyle(
-                                color: color,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
+                            TweenAnimationBuilder<double>(
+                              tween: Tween<double>(begin: 0, end: scoreData),
+                              duration: const Duration(milliseconds: 1500),
+                              curve: Curves.easeOutExpo,
+                              builder: (context, value, child) {
+                                return Text(
+                                  "P: ${value.toStringAsFixed(1)}",
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -722,11 +788,21 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 6),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: (scoreData % 100) / 100,
-                      backgroundColor: color.withOpacity(0.1),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                      minHeight: 4,
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: (scoreData % 100) / 100,
+                      ),
+                      duration: const Duration(milliseconds: 1000),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return LinearProgressIndicator(
+                          value: value.clamp(0.0, 1.0),
+                          backgroundColor: color.withOpacity(0.1),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                          minHeight: 4,
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 8),

@@ -125,7 +125,7 @@ class FinancePage extends StatefulWidget {
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category',
                       border: OutlineInputBorder(),
@@ -187,7 +187,7 @@ class FinancePage extends StatefulWidget {
 
 class _FinancePageState extends State<FinancePage> {
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '\$');
-  late List<FinanceAsset> _stocks = [];
+  late final List<FinanceAsset> _stocks = [];
   final List<FinanceAsset> _coins = FinanceService.getCoins();
 
   Future<void> _initWatchlist() async {
@@ -195,7 +195,7 @@ class _FinancePageState extends State<FinancePage> {
 
     for (String ticker in myTickers) {
       final asset = await FinanceService.fetchVnStock(ticker);
-      if (mounted && asset != null) {
+      if (mounted) {
         setState(() {
           _stocks.add(asset);
         });
@@ -321,34 +321,7 @@ class _FinancePageState extends State<FinancePage> {
             }),
 
             // Stocks Section
-            _buildSectionHeader(context, 'Stocks', Icons.trending_up_rounded),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildAssetItem(context, _stocks[index]),
-                  childCount: _stocks.length,
-                ),
-              ),
-            ),
-
-            // Crypto Section
-            _buildSectionHeader(
-              context,
-              'Cryptocurrency',
-              Icons.currency_bitcoin_rounded,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => _buildAssetItem(context, _coins[index]),
-                  childCount: _coins.length,
-                ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 120)),
+           
           ],
         ),
       ),

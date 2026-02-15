@@ -105,7 +105,13 @@ class MainShell extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.home),
             tooltip: "Home",
-            onPressed: () => context.go('/'),
+            onPressed: () {
+              try {
+                context.pop();
+              } catch (e) {
+                context.go('/');
+              }
+            },
           ),
           // 2. Navigate to Canvas (Your Grid)
           IconButton(

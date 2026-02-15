@@ -101,7 +101,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
         imageQuality: 85,
       );
 
-      print("Path when I pick image: " + image!.path);
+      print("Path when I pick image: ${image!.path}");
       // Sử dụng path_provider
 
       //  final Directory appDir=await
@@ -112,16 +112,14 @@ class _FoodInputPageState extends State<FoodInputPage> {
       // final String fileName = path.basename(image!.path);
       //   final String permanentPath = '${appDir.path}/$fileName';
 
-      if (savedImage != null) {
-        setState(() {
-          _pickedImage = File(savedImage.path);
-          _imagePath = fileName;
-          print("Path when I save image: " + savedImage.path);
-        });
-        // Trigger AI analysis if food name is also present or just analysis from image
-        _analyzeFood();
-      }
-    } catch (e) {
+      setState(() {
+        _pickedImage = File(savedImage.path);
+        _imagePath = fileName;
+        print("Path when I save image: " + savedImage.path);
+      });
+      // Trigger AI analysis if food name is also present or just analysis from image
+      _analyzeFood();
+        } catch (e) {
       debugPrint('Error picking image: $e');
     }
   }
@@ -140,13 +138,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
       if (mounted) {
         setState(() {
           _caloriesController.text =
-              calories.carbs.toString() +
-              "|" +
-              calories.protein.toString() +
-              "|" +
-              calories.fat.toString() +
-              "|" +
-              calories.calories.toString();
+              "${calories.carbs}|${calories.protein}|${calories.fat}|${calories.calories}";
           _isAnalyzing = false;
         });
       }
@@ -377,7 +369,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                       // --- TRAILING ---
                       // Giả sử bạn muốn hiển thị calories hoặc giá tiền
                       trailing: AutoSizeText(
-                        meal.meal.calories.toString() + " kcal",
+                        "${meal.meal.calories} kcal",
                         maxLines: 1,
                       ),
                     );
@@ -449,7 +441,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                         ? ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.file(
-                              File(appDir.path + "/" + _imagePath),
+                              File("${appDir.path}/$_imagePath"),
                               fit: BoxFit.cover,
                             ),
                           )

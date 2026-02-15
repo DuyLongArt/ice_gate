@@ -32,7 +32,7 @@ class FoodDashboardPage extends StatefulWidget {
     final aiService = Aifoodcaloriesservices();
     final picker = ImagePicker();
     final healthMealDAO = context.read<HealthMealDAO>();
-    
+
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -88,7 +88,9 @@ class _MealDialogContentState extends State<_MealDialogContent> {
 
       final dir = await getApplicationDocumentsDirectory();
       final String fileName = path.basename(image.path);
-      final File savedImage = await File(image.path).copy('${dir.path}/$fileName');
+      final File savedImage = await File(
+        image.path,
+      ).copy('${dir.path}/$fileName');
 
       setState(() {
         _pickedImage = savedImage;
@@ -136,7 +138,9 @@ class _MealDialogContentState extends State<_MealDialogContent> {
 
       await widget.healthMealDAO.insertMeal(
         MealsTableCompanion.insert(
-          mealName: _foodController.text.isEmpty ? "Meal" : _foodController.text,
+          mealName: _foodController.text.isEmpty
+              ? "Meal"
+              : _foodController.text,
           mealImageUrl: Value(_imagePath),
           carbs: Value(carbs),
           protein: Value(protein),
@@ -153,7 +157,7 @@ class _MealDialogContentState extends State<_MealDialogContent> {
           weight: const Value(0),
         ),
       );
-      
+
       if (mounted) {
         context.go('/health/food');
       }
@@ -315,7 +319,8 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
 
           final data = snapshot.data ?? [];
           final groupedMeals = _groupMealsByDay(data);
-          final sortedDays = groupedMeals.keys.toList()..sort((a, b) => b.compareTo(a));
+          final sortedDays = groupedMeals.keys.toList()
+            ..sort((a, b) => b.compareTo(a));
 
           return CustomScrollView(
             physics: const BouncingScrollPhysics(),
@@ -337,7 +342,7 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
               ),
               if (data.isNotEmpty)
                 SliverToBoxAdapter(
-                  child: _buildMacroOverview(data),
+                  child: _buildMacroOverview(data, sortedDays),
                 ),
               if (data.isEmpty)
                 SliverFillRemaining(
@@ -345,14 +350,19 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.restaurant_menu, 
-                          size: 64, 
-                          color: colorScheme.primary.withOpacity(0.2)),
+                        Icon(
+                          Icons.restaurant_menu,
+                          size: 64,
+                          color: colorScheme.primary.withOpacity(0.2),
+                        ),
                         const SizedBox(height: 16),
-                        Text('No meals logged yet', 
+                        Text(
+                          'No meals logged yet',
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600)),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -361,14 +371,11 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final dateKey = sortedDays[index];
-                        final dayMeals = groupedMeals[dateKey]!;
-                        return _buildDayCard(dateKey, dayMeals);
-                      },
-                      childCount: sortedDays.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final dateKey = sortedDays[index];
+                      final dayMeals = groupedMeals[dateKey]!;
+                      return _buildDayCard(dateKey, dayMeals);
+                    }, childCount: sortedDays.length),
                   ),
                 ),
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -379,15 +386,30 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
     );
   }
 
-  Widget _buildMacroOverview(List<DayWithMeal> data) {
+  Widget _buildMacroOverview(List<DayWithMeal> data, List<String> sortedDays) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    
+
     final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final todayMeals = data.where((m) => DateFormat('yyyy-MM-dd').format(m.meal.eatenAt) == todayKey).toList();
-    
+
+    // Determine which day to show
+    String targetKey = todayKey;
+    String displayLabel = "TODAY'S TOTAL";
+
+    if (!sortedDays.contains(todayKey) && sortedDays.isNotEmpty) {
+      targetKey = sortedDays.first; // Most recent day
+      final date = DateTime.parse(targetKey);
+      displayLabel = "${DateFormat('MMM d').format(date).toUpperCase()} TOTAL";
+    }
+
+    final targetMeals = data
+        .where(
+          (m) => DateFormat('yyyy-MM-dd').format(m.meal.eatenAt) == targetKey,
+        )
+        .toList();
+
     double p = 0, c = 0, f = 0, kcal = 0;
-    for (var entry in todayMeals) {
+    for (var entry in targetMeals) {
       p += entry.meal.protein;
       c += entry.meal.carbs;
       f += entry.meal.fat;
@@ -401,10 +423,7 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary,
-            colorScheme.primary.withOpacity(0.8),
-          ],
+          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
         ),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
@@ -425,7 +444,7 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'TODAY\'S TOTAL',
+                    displayLabel,
                     style: textTheme.labelSmall?.copyWith(
                       color: colorScheme.onPrimary.withOpacity(0.8),
                       letterSpacing: 1.2,
@@ -460,9 +479,24 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildMacroIndicator('Protein', p, colorScheme.onPrimary, Colors.orange),
-              _buildMacroIndicator('Carbs', c, colorScheme.onPrimary, Colors.blue),
-              _buildMacroIndicator('Fat', f, colorScheme.onPrimary, Colors.pink),
+              _buildMacroIndicator(
+                'Protein',
+                p,
+                colorScheme.onPrimary,
+                Colors.orange,
+              ),
+              _buildMacroIndicator(
+                'Carbs',
+                c,
+                colorScheme.onPrimary,
+                Colors.blue,
+              ),
+              _buildMacroIndicator(
+                'Fat',
+                f,
+                colorScheme.onPrimary,
+                Colors.pink,
+              ),
             ],
           ),
         ],
@@ -470,7 +504,12 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
     );
   }
 
-  Widget _buildMacroIndicator(String label, double value, Color textColor, Color barColor) {
+  Widget _buildMacroIndicator(
+    String label,
+    double value,
+    Color textColor,
+    Color barColor,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -537,7 +576,10 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -624,7 +666,7 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
             Text(
               '${meal.calories.toInt()}',
               style: TextStyle(
-                fontSize: 20, 
+                fontSize: 20,
                 fontWeight: FontWeight.w900,
                 color: colorScheme.onSurface,
               ),
@@ -679,7 +721,7 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
       child: Text(
         '$label ${value.toInt()}g',
         style: TextStyle(
-          fontSize: 10, 
+          fontSize: 10,
           color: color,
           fontWeight: FontWeight.w900,
         ),

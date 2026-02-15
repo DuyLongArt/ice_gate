@@ -75,8 +75,8 @@ class ScoreBlock {
   }
 
   void init(ScoreDAO dao, int personID) {
-    this._dao = dao;
-    this._personID = personID;
+    _dao = dao;
+    _personID = personID;
     dao.watchScoreByPersonID(personID).listen((data) {
       if (data != null) {
         updateScore(
