@@ -24,6 +24,32 @@ class FinanceBlock {
     assets.value = data;
   }
 
+  /// Total Net Worth (Accounts + Assets + Net Income)
+  late final totalBalance = computed(() {
+    final accSum = accounts.value.fold(0.0, (sum, acc) => sum + acc.balance);
+    final assetSum = assets.value.fold(
+      0.0,
+      (sum, asset) => sum + (asset.currentEstimatedValue ?? 0.0),
+    );
+
+    final txs = transactions.value;
+    final income = txs
+        .where((t) => t.type == 'income')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final expense = txs
+        .where((t) => t.type == 'expense')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final investment = txs
+        .where((t) => t.type == 'investment')
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    final savings = txs
+        .where((t) => t.type == 'savings')
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    return accSum + assetSum + (income + savings - expense - investment);
+  });
+
   /// Total savings amount
   late final totalSavings = computed(() {
     return transactions.value
@@ -133,6 +159,7 @@ class FinanceBlock {
     required double amount,
     String? description,
     DateTime? date,
+    int? projectID,
   }) async {
     await _dao.insertTransaction(
       TransactionsTableCompanion.insert(
@@ -142,6 +169,7 @@ class FinanceBlock {
         amount: amount,
         description: Value(description),
         transactionDate: Value(date ?? DateTime.now()),
+        projectID: Value(projectID),
       ),
     );
   }

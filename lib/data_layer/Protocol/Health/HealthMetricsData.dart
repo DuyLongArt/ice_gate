@@ -233,6 +233,19 @@ class HealthMetricsData {
         trendPositive: null,
         detailPage: '/health/food/dashboard',
       ),
+      const HealthMetric(
+        id: 'focus',
+        name: 'Focus',
+        value: '0',
+        icon: Icons.timer,
+        color: Color(0xFF3F51B5),
+        unit: 'min',
+        progress: 0.0,
+        subtitle: 'Study Time',
+        trend: 'New',
+        trendPositive: true,
+        detailPage: '/health/focus',
+      ),
     ];
   }
 
@@ -245,14 +258,20 @@ class HealthMetricsData {
     final healthMetricsDAO = context.read<HealthMetricsDAO>();
 
     // 2. Fetch data from the database
-    // Assume Person ID 1 for single-user apps
     final metricsLocal = await healthMetricsDAO.getMetricsForDate(1, day);
     final calories = await healthMealDAO.getCaloriesByDate(day);
 
-    // 3. Fetch live steps from HealthService (Pedometer)
+    // 3. Fetch yesterday's data for trend comparison
+    final yesterday = day.subtract(const Duration(days: 1));
+    final yesterdayMetrics = await healthMetricsDAO.getMetricsForDate(
+      1,
+      yesterday,
+    );
+    final yesterdayCalories = await healthMealDAO.getCaloriesByDate(yesterday);
+
+    // 4. Fetch live steps from HealthService (Pedometer)
     int currentSteps = metricsLocal?.steps ?? 0;
 
-    // Only fetch live steps if we are looking at TODAY's data
     final now = DateTime.now();
     final isToday =
         day.year == now.year && day.month == now.month && day.day == now.day;
@@ -265,15 +284,13 @@ class HealthMetricsData {
 
           // Sync back to DB
           if (metricsLocal != null) {
-            // Update existing
             await healthMetricsDAO.insertOrUpdateMetrics(
               metricsLocal.toCompanion(true).copyWith(steps: Value(liveSteps)),
             );
           } else {
-            // Insert new
             await healthMetricsDAO.insertOrUpdateMetrics(
               HealthMetricsTableCompanion.insert(
-                personID: 1, // Default user
+                personID: 1,
                 date: day,
                 steps: Value(liveSteps),
                 updatedAt: Value(DateTime.now()),
@@ -286,19 +303,56 @@ class HealthMetricsData {
       }
     }
 
-    final caloriesValue = calories.toString();
+    // 5. Helper for trend calculation
+    String trendStr(num today, num yesterday, String unit) {
+      final diff = today - yesterday;
+      if (diff == 0) return '0$unit';
+      final sign = diff > 0 ? '+' : '';
+      if (unit == '%') {
+        if (yesterday == 0) return today > 0 ? '+100%' : '0%';
+        final pct = ((diff / yesterday) * 100).round();
+        return '$sign$pct%';
+      }
+      return '$sign${diff is double ? diff.toStringAsFixed(1) : diff}$unit';
+    }
 
-    // 4. Create and return the object directly
+    bool? trendPositive(
+      num today,
+      num yesterday, {
+      bool higherIsBetter = true,
+    }) {
+      if (today == yesterday) return null;
+      return higherIsBetter ? today > yesterday : today < yesterday;
+    }
+
+    // 6. Extract values
+    final waterMl = metricsLocal?.waterGlasses ?? 0;
+    final exerciseMin = metricsLocal?.exerciseMinutes ?? 0;
+    final sleepHrs = metricsLocal?.sleepHours ?? 0.0;
+    final heartRate = metricsLocal?.heartRate ?? 0;
+
+    final yWater = yesterdayMetrics?.waterGlasses ?? 0;
+    final yExercise = yesterdayMetrics?.exerciseMinutes ?? 0;
+    final ySleep = yesterdayMetrics?.sleepHours ?? 0.0;
+    final ySteps = yesterdayMetrics?.steps ?? 0;
+
+    // Goals
+    const stepGoal = 10000;
+    const waterGoal = 2000; // ml
+    const exerciseGoal = 60; // min
+    const sleepGoal = 8.0; // hours
+
+    // 7. Build metric map
     return {
       'food': HealthMetric(
         id: 'food',
         name: 'Food',
-        value: caloriesValue,
+        value: calories.round().toString(),
         icon: Icons.fastfood,
         color: const Color.fromARGB(255, 95, 202, 19),
         unit: 'kcal',
-        subtitle: 'Health first',
-        trend: '0kcal',
+        subtitle: 'Today\'s intake',
+        trend: trendStr(calories, yesterdayCalories, '%'),
         trendPositive: null,
         detailPage: '/health/food/dashboard',
       ),
@@ -309,10 +363,82 @@ class HealthMetricsData {
         icon: Icons.run_circle,
         color: const Color(0xFF9C27B0),
         unit: 'steps',
-        subtitle: '100 meters define my line',
-        trend: '0steps',
-        trendPositive: null,
+        progress: (currentSteps / stepGoal).clamp(0.0, 1.0),
+        subtitle: 'Goal: $stepGoal',
+        trend: trendStr(currentSteps, ySteps, '%'),
+        trendPositive: trendPositive(currentSteps, ySteps),
         detailPage: '/health/steps',
+      ),
+      'water': HealthMetric(
+        id: 'water',
+        name: 'Water',
+        value: waterMl.toString(),
+        icon: Icons.water_drop,
+        color: const Color(0xFF2196F3),
+        unit: 'ml',
+        progress: (waterMl / waterGoal).clamp(0.0, 1.0),
+        subtitle: 'Goal: $waterGoal ml',
+        trend: trendStr(waterMl, yWater, '%'),
+        trendPositive: trendPositive(waterMl, yWater),
+        detailPage: '/health/water',
+      ),
+      'exercise': HealthMetric(
+        id: 'exercise',
+        name: 'Exercise',
+        value: exerciseMin.toString(),
+        icon: Icons.fitness_center,
+        color: const Color(0xFFFF5722),
+        unit: 'min',
+        progress: (exerciseMin / exerciseGoal).clamp(0.0, 1.0),
+        subtitle: 'Goal: $exerciseGoal min',
+        trend: trendStr(exerciseMin, yExercise, ' min'),
+        trendPositive: trendPositive(exerciseMin, yExercise),
+        detailPage: '/health/exercise',
+      ),
+      'heart_rate': HealthMetric(
+        id: 'heart_rate',
+        name: 'Heart Rate',
+        value: heartRate > 0 ? heartRate.toString() : '--',
+        icon: Icons.favorite_rounded,
+        color: const Color(0xFFE91E63),
+        unit: 'bpm',
+        subtitle: heartRate < 60
+            ? 'Resting'
+            : heartRate < 100
+            ? 'Normal'
+            : heartRate < 140
+            ? 'Elevated'
+            : 'High',
+        trend: null,
+        trendPositive: null,
+        detailPage: '/health/heart_rate',
+      ),
+      'sleep': HealthMetric(
+        id: 'sleep',
+        name: 'Sleep',
+        value: sleepHrs > 0 ? sleepHrs.toStringAsFixed(1) : '--',
+        icon: Icons.bedtime_rounded,
+        color: const Color(0xFF673AB7),
+        unit: 'hours',
+        progress: sleepHrs > 0 ? (sleepHrs / sleepGoal).clamp(0.0, 1.0) : null,
+        subtitle: 'Goal: ${sleepGoal.toStringAsFixed(0)} hours',
+        trend: sleepHrs > 0 ? trendStr(sleepHrs, ySleep, 'h') : null,
+        trendPositive: sleepHrs > 0 ? trendPositive(sleepHrs, ySleep) : null,
+        detailPage: '/health/sleep',
+      ),
+      'focus': HealthMetric(
+        id: 'focus',
+        name: 'Focus',
+        value: ((metricsLocal?.exerciseMinutes ?? 0))
+            .toString(), // Placeholder until we have focus in metricsLocal or dedicated fetch
+        icon: Icons.timer_outlined,
+        color: const Color(0xFF3F51B5),
+        unit: 'min',
+        progress: null,
+        subtitle: 'Daily focus goal',
+        trend: null,
+        trendPositive: null,
+        detailPage: '/health/focus',
       ),
     };
   }

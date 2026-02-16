@@ -20,12 +20,14 @@ void main() async {
   final notificationService = LocalNotificationService();
   await notificationService.init();
   runApp(
-    DataLayer(
-      database: database,
-      childWidget:
-          // Routerlayer(childWidget:
-          ThemeLayer(childWidget: Adapter(childWidget: const MyApp())),
-      // const MyApp(),),)
+    Provider<LocalNotificationService>.value(
+      value: notificationService,
+      child: DataLayer(
+        database: database,
+        childWidget: ThemeLayer(
+          childWidget: Adapter(childWidget: const MyApp()),
+        ),
+      ),
     ),
   );
 }

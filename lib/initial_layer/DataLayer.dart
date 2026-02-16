@@ -7,7 +7,8 @@ import 'package:ice_shield/data_layer/DataSources/local_database/DataSeeder.dart
 import 'package:ice_shield/data_layer/DataSources/local_database/DatabaseAgent.dart'
     as DatabaseAgent;
 import 'package:ice_shield/data_layer/Protocol/Canvas/ExternalWidgetProtocol.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PasskeyAuthService.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
@@ -18,6 +19,7 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidget
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ObjectDatabaseBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FocusBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import 'package:pedometer/pedometer.dart';
@@ -61,12 +63,14 @@ class _DataLayerState extends State<DataLayer> {
   late ObjectDatabaseBlock objectDatabaseBlock;
   late ScoreBlock scoreBlock;
   late WidgetManagerBlock widgetManagerBlock;
+  late GrowthBlock growthBlock;
+  late FocusBlock focusBlock;
 
   late Stream<StepCount> _stepCountStream;
-  late Stream<PedestrianStatus> _pedestrianStatusStream;
+  // late Stream<PedestrianStatus> _pedestrianStatusStream; // Removed
 
   late HealthMetricsDAO healthMetricsDAO;
-  late StreamSubscription<StepCount> _stepSubscription;
+  // late StreamSubscription<StepCount> _stepSubscription; // Removed
   int currentSteps = 0;
 
   @override
@@ -82,10 +86,7 @@ class _DataLayerState extends State<DataLayer> {
   void initPedometer() {
     _stepCountStream = Pedometer.stepCountStream;
 
-    _stepSubscription = _stepCountStream.listen(
-      _onStepCount,
-      onError: _onStepCountError,
-    );
+    _stepCountStream.listen(_onStepCount, onError: _onStepCountError);
   }
 
   void _onStepCount(StepCount event) {
@@ -114,13 +115,15 @@ class _DataLayerState extends State<DataLayer> {
       // --- Database and Asset Loading ---
       var baseUrl = "https://backend.duylong.art";
       var authService = CustomAuthService(baseUrl: baseUrl);
+      var passkeyService = PasskeyAuthService();
 
       // Initialize Blocks
       personBlock = PersonBlock(authService: authService);
       authBlock = AuthBlock(
         authService: authService,
-        sessionDao:
-            widget.database.sessionDAO, // Assuming sessionDAO is available
+        sessionDao: widget.database.sessionDAO,
+        passkeyService: passkeyService,
+        personDao: widget.database.personManagementDAO,
       );
       healthMetricsDAO = widget.database.healthMetricsDAO;
 
@@ -134,6 +137,29 @@ class _DataLayerState extends State<DataLayer> {
           date: Value(now),
         ),
       );
+
+      // Initialize GrowthBlock
+      growthBlock = GrowthBlock()..init(widget.database.growthDAO, 1);
+
+      // Initialize ScoreBlock
+      scoreBlock = ScoreBlock()
+        ..init(
+          widget.database.scoreDAO,
+          widget.database.personManagementDAO,
+          widget.database.financeDAO,
+          widget.database.healthMetricsDAO,
+          widget.database.healthMealDAO,
+          1,
+        );
+
+      // Initialize FocusBlock
+      focusBlock =
+          FocusBlock(
+              focusSessionDao: widget.database.focusSessionsDAO,
+              personId: 1, // Default to 1 for now
+            )
+            ..growthBlock = growthBlock
+            ..scoreBlock = scoreBlock;
 
       // widget.database.scoreDAO.insertOrUpdateScore(ScoreLocalData(personID: 1, healthGlobalScore: 0, socialGlobalScore: 0, financialGlobalScore: 0, careerGlobalScore: 0, createdAt: DateTime.now(), updatedAt: DateTime.now(), scoreID: 1));
 
@@ -284,10 +310,7 @@ class _DataLayerState extends State<DataLayer> {
         ),
 
         // GrowthBlock
-        Provider<GrowthBlock>(
-          create: (_) => GrowthBlock()..init(widget.database.growthDAO, 1),
-          dispose: (_, block) => block.dispose(),
-        ),
+        Provider<GrowthBlock>.value(value: growthBlock),
 
         // ContentBlock
         Provider<ContentBlock>(
@@ -303,10 +326,7 @@ class _DataLayerState extends State<DataLayer> {
           dispose: (_, block) => block.dispose(),
         ),
 
-        Provider<ScoreBlock>(
-          create: (_) => ScoreBlock()..init(widget.database.scoreDAO, 1),
-          dispose: (_, block) => block.dispose(),
-        ),
+        Provider<ScoreBlock>.value(value: scoreBlock),
         Provider<ProjectBlock>(
           create: (_) => ProjectBlock()..init(widget.database.projectsDAO, 1),
           dispose: (_, block) => block.dispose(),
@@ -314,6 +334,12 @@ class _DataLayerState extends State<DataLayer> {
         Provider<InternalWidgetBlock>(create: (_) => InternalWidgetBlock()),
         Provider<ExternalWidgetBlock>(create: (_) => ExternalWidgetBlock()),
         Provider<WidgetManagerBlock>(create: (_) => widgetManagerBlock),
+
+        // --- Focus ---
+        Provider<FocusSessionsDAO>(
+          create: (_) => widget.database.focusSessionsDAO,
+        ),
+        Provider<FocusBlock>.value(value: focusBlock..init()),
       ],
       // Use MaterialApp as the child and WidgetConsumer as the home screen.
       child: widget.childWidget,

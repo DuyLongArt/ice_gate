@@ -98,12 +98,14 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
                       size: 28,
                     ),
                   )
-                : Draggable<int>(
+                : LongPressDraggable<int>(
+                    delay: const Duration(milliseconds: 300),
+                    hapticFeedbackOnStart: true,
                     data: widget.index,
                     feedback: Material(
                       color: Colors.transparent,
                       child: Transform.scale(
-                        scale: 1.0,
+                        scale: 1.15,
                         child: BuildCard(
                           item: cellData,
                           isDragging: true,

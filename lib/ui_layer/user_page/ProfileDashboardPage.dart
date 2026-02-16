@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:ice_shield/ui_layer/user_page/main_deparment/ProfileHeader.dart';
 import 'package:ice_shield/ui_layer/user_page/main_deparment/HealthSectionCard.dart';
 import 'package:ice_shield/ui_layer/user_page/main_deparment/FinanceSectionCard.dart';
@@ -13,6 +15,7 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ObjectDatabaseBlock.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 
 class ProfileDashboardPage extends StatelessWidget {
   const ProfileDashboardPage({super.key});
@@ -23,14 +26,54 @@ class ProfileDashboardPage extends StatelessWidget {
       destination: "/profile",
       size: size,
       icon: Icons.edit,
-      mainFunction: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Edit Profile feature coming soon!'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
+      mainFunction: () async {
+        final database = context.read<AppDatabase>();
+        final financeDAO = database.financeDAO;
+
+        // Seed Finance Data
+        // 1. Create Main Account
+        await financeDAO.createAccount(
+          FinancialAccountsTableCompanion(
+            personID: const Value(1), // Assuming ID 1 for now
+            accountName: const Value('Main Account'),
+            balance: const Value(5420.00),
+            currency: const Value(CurrencyType.USD),
           ),
         );
+
+        final now = DateTime.now();
+        // 2. Add Transactions for current month
+        await financeDAO.insertTransaction(
+          TransactionsTableCompanion(
+            personID: const Value(1),
+            type: const Value('income'),
+            category: const Value('Salary'),
+            amount: const Value(6500.00),
+            transactionDate: Value(now),
+            description: const Value('Monthly Salary'),
+          ),
+        );
+
+        await financeDAO.insertTransaction(
+          TransactionsTableCompanion(
+            personID: const Value(1),
+            type: const Value('expense'),
+            category: const Value('Rent'),
+            amount: const Value(2100.00),
+            transactionDate: Value(now),
+            description: const Value('Monthly Rent'),
+          ),
+        );
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Finance Data Seeded!'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       },
     );
   }
@@ -137,9 +180,25 @@ class ProfileDashboardPage extends StatelessWidget {
                     metrics: profile.health,
                     onTap: () => context.go('/health'),
                   ),
-                  FinanceSectionCard(
-                    metrics: profile.finance,
-                    onTap: () => context.go('/finance'),
+                  StreamBuilder<FinanceMetrics>(
+                    stream: _getFinanceStream(
+                      context,
+                      int.tryParse(info.profiles.id?.toString() ?? '1') ?? 1,
+                    ),
+                    builder: (context, snapshot) {
+                      final metrics =
+                          snapshot.data ??
+                          const FinanceMetrics(
+                            balance: 0,
+                            monthlyIncome: 0,
+                            monthlyExpenses: 0,
+                            savingsRate: 0,
+                          );
+                      return FinanceSectionCard(
+                        metrics: metrics,
+                        onTap: () => context.go('/finance'),
+                      );
+                    },
                   ),
                   SocialSectionCard(
                     metrics: profile.social,
@@ -151,8 +210,126 @@ class ProfileDashboardPage extends StatelessWidget {
                   ),
                 ],
               ),
+
+              const SizedBox(height: 32),
+
+              // --- SECTION: SETTINGS ---
+              Text(
+                'Settings',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              _buildNotificationToggle(context, colorScheme),
             ],
           ),
+        ),
+      );
+    });
+  }
+
+  Stream<FinanceMetrics> _getFinanceStream(BuildContext context, int personID) {
+    final database = context.read<AppDatabase>();
+    final financeDAO = database.financeDAO;
+
+    return financeDAO.watchAccounts(personID).asyncMap((accounts) async {
+      double balance = 0;
+      for (var acc in accounts) {
+        balance += acc.balance;
+      }
+
+      final now = DateTime.now();
+      // Fetch transactions for current month to calc Income/Expense
+      final transactions = await financeDAO
+          .watchMonthlyTransactions(personID, now.year, now.month)
+          .first;
+
+      double income = 0;
+      double expense = 0;
+
+      for (var tx in transactions) {
+        // Assuming 'type' column stores 'income'/'expense' or amount sign indicates it
+        // Or check TransactionType enum if available.
+        // Based on typical schema:
+        if (tx.type == 'income') {
+          income += tx.amount;
+        } else if (tx.type == 'expense') {
+          expense += tx.amount;
+        } else {
+          // Fallback based on sign if type is ambiguous
+          if (tx.amount > 0)
+            income += tx.amount;
+          else
+            expense += tx.amount.abs();
+        }
+      }
+
+      double savingsRate = 0;
+      if (income > 0) {
+        savingsRate = (income - expense) / income;
+      }
+
+      return FinanceMetrics(
+        balance: balance,
+        monthlyIncome: income,
+        monthlyExpenses: expense,
+        savingsRate: savingsRate,
+      );
+    });
+  }
+
+  Widget _buildNotificationToggle(
+    BuildContext context,
+    ColorScheme colorScheme,
+  ) {
+    final notificationService = context.read<LocalNotificationService>();
+    return Watch((context) {
+      final enabled = notificationService.notificationsEnabled.value;
+      return Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+        ),
+        child: SwitchListTile.adaptive(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 4,
+          ),
+          secondary: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: enabled
+                  ? Colors.amber.withOpacity(0.15)
+                  : colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              enabled
+                  ? Icons.notifications_active_rounded
+                  : Icons.notifications_off_rounded,
+              color: enabled ? Colors.amber : colorScheme.onSurfaceVariant,
+              size: 24,
+            ),
+          ),
+          title: Text(
+            'Notifications',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          subtitle: Text(
+            enabled ? 'Daily 7 AM briefing active' : 'All notifications off',
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
+          ),
+          value: enabled,
+          activeColor: Colors.amber,
+          onChanged: (value) async {
+            await notificationService.setNotificationsEnabled(value);
+          },
         ),
       );
     });

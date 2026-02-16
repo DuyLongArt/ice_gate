@@ -1,16 +1,19 @@
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/Const.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
 import 'package:intl/intl.dart';
+import 'dart:math';
 
 class GamificationService {
   final HealthMetricsDAO _healthMetricsDAO;
   final HealthMealDAO _healthMealDAO;
   final PersonManagementDAO _personDAO;
+  final FinanceDAO _financeDAO;
 
   GamificationService(
     this._healthMetricsDAO,
     this._healthMealDAO,
     this._personDAO,
+    this._financeDAO,
   );
 
   Future<int> calculateTotalPoints(int personID) async {
@@ -67,21 +70,46 @@ class GamificationService {
       socialPoints = 0;
     }
 
-    return stepsPoints + dietPoints + socialPoints;
+    // 4. Points from Finance: Net Worth / FINANCE_SAVINGS_MILESTONE * FINANCE_SAVINGS_POINTS
+    int financePoints = 0;
+    try {
+      final accounts = await _financeDAO.watchAccounts(personID).first;
+      final assets = await _financeDAO.watchAssets(personID).first;
+
+      double totalNetWorth = 0;
+      for (var acc in accounts) {
+        totalNetWorth += acc.balance;
+      }
+      for (var asset in assets) {
+        totalNetWorth += (asset.currentEstimatedValue ?? 0.0);
+      }
+
+      financePoints =
+          ((totalNetWorth / FINANCE_SAVINGS_MILESTONE) * FINANCE_SAVINGS_POINTS)
+              .floor();
+    } catch (e) {
+      financePoints = 0;
+    }
+
+    return stepsPoints + dietPoints + socialPoints + financePoints;
   }
 
-  int getLevel(int points) {
-    if (points <= 0) return 0;
-    return (points / 100).floor();
-  }
-
-  double getProgressToNextLevel(int points) {
+  static int getLevel(int points) {
     if (points < 0) return 0;
-    int currentLevel = getLevel(points);
-    int currentLevelBase = currentLevel * 100;
+    // Formula derived from P = 50 * L * (L + 1)
+    return ((-1 + sqrt(1 + 0.08 * points)) / 2).floor();
+  }
 
-    // Progress is (points - base) / 100
-    // Example: 150 pts. Level 1. Base 100. (150-100)/100 = 0.5. Correct.
-    return (points - currentLevelBase) / 100;
+  static double getProgressToNextLevel(int points) {
+    if (points < 0) return 0.0;
+
+    int currentLevel = getLevel(points);
+    // Base points for current level L: 50 * L * (L + 1)
+    int basePoints = (50 * currentLevel * (currentLevel + 1)).toInt();
+
+    // Points needed for next level (L+1) is simply (L+1) * 100
+    int pointsNeedForNextLevel = (currentLevel + 1) * 100;
+
+    return (points - basePoints) / pointsNeedForNextLevel;
   }
 }

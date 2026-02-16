@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/Project/ProjectProtocol.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/Const.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'TaskItem.dart';
@@ -213,6 +215,74 @@ class ProjectDetailsPage extends StatelessWidget {
                       );
                     },
                   ),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader(context, 'Financial Activity', () {
+                    _showAddProjectTransactionDialog(
+                      context,
+                      context.read<FinanceBlock>(),
+                      project.projectID,
+                    );
+                  }),
+                  const SizedBox(height: 16),
+                  Watch((context) {
+                    final financeBlock = Provider.of<FinanceBlock>(
+                      context,
+                      listen: false,
+                    );
+                    final txs = financeBlock.transactions.value
+                        .where((t) => t.projectID == project.projectID)
+                        .toList();
+
+                    if (txs.isEmpty) {
+                      return _buildEmptyState(
+                        context,
+                        'No financial activity for this project yet.',
+                      );
+                    }
+                    return Column(
+                      children: txs.map((tx) {
+                        final isExpense =
+                            tx.type == 'expense' || tx.type == 'investment';
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                (isExpense
+                                        ? Colors.redAccent
+                                        : Colors.greenAccent)
+                                    .withOpacity(0.1),
+                            child: Icon(
+                              isExpense ? Icons.remove : Icons.add,
+                              color: isExpense
+                                  ? Colors.redAccent
+                                  : Colors.greenAccent,
+                              size: 16,
+                            ),
+                          ),
+                          title: Text(
+                            tx.category.toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          subtitle: Text(
+                            DateFormat.yMMMd().format(tx.transactionDate),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          trailing: Text(
+                            '${isExpense ? "-" : "+"}\$${tx.amount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isExpense
+                                  ? Colors.redAccent
+                                  : Colors.greenAccent,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  }),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -296,6 +366,73 @@ class ProjectDetailsPage extends StatelessWidget {
               }
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddProjectTransactionDialog(
+    BuildContext context,
+    FinanceBlock financeBlock,
+    int projectID,
+  ) {
+    final amountController = TextEditingController();
+    final descriptionController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Investment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'This will be recorded as an investment for this project.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: amountController,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                prefixText: '\$',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (Optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = double.tryParse(amountController.text);
+              if (amount != null && amount > 0) {
+                await financeBlock.addTransaction(
+                  category: 'investing',
+                  type: 'investment',
+                  amount: amount,
+                  description: descriptionController.text.isEmpty
+                      ? "Project investment"
+                      : descriptionController.text,
+                  projectID: projectID,
+                );
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
+            child: const Text('Add Investment'),
           ),
         ],
       ),

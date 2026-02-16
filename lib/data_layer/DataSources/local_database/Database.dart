@@ -177,6 +177,7 @@ class ProjectsTable extends Table {
   )();
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
+  TextColumn get category => text().nullable()(); // Added category column
   TextColumn get color => text().nullable()();
   IntColumn get status =>
       integer().withDefault(const Constant(0))(); // 0: active, 1: done
@@ -377,6 +378,11 @@ class TransactionsTable extends Table {
   DateTimeColumn get transactionDate =>
       dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  IntColumn get projectID => integer().nullable().references(
+    ProjectsTable,
+    #projectID,
+    onDelete: KeyAction.cascade,
+  )();
 }
 
 @DataClassName('GoalData')
@@ -584,14 +590,18 @@ class ThemeDAO extends DatabaseAccessor<AppDatabase> with _$ThemeDAOMixin {
 }
 
 // --- 4. DAO Definitions ---
+//remove admin
 @DriftAccessor(tables: [PersonsTable])
 class PersonDAO extends DatabaseAccessor<AppDatabase> with _$PersonDAOMixin {
   PersonDAO(super.db);
-  Stream<List<PersonData>> getAllPersons() => select(personsTable).watch();
+  Stream<List<PersonData>> getAllPersons() {
+    return (select(
+      personsTable,
+    )..where((t) => t.personID.isBiggerThanValue(1))).watch();
+  }
 
   Future<PersonData?> getPersonByID(int id) async {
     final query = select(personsTable)..where((t) => t.personID.equals(id));
-
     return query.getSingleOrNull();
   }
 }
@@ -647,6 +657,43 @@ class ScoreDAO extends DatabaseAccessor<AppDatabase> with _$ScoreDAOMixin {
         ScoresTableCompanion.insert(
           personID: personID,
           socialGlobalScore: Value(score),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
+
+  Future<void> updateFinancialScore(int personID, double score) async {
+    final existing = await getScoreByPersonID(personID);
+    if (existing != null) {
+      await update(scoresTable).replace(
+        existing.copyWith(
+          financialGlobalScore: score,
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } else {
+      await into(scoresTable).insert(
+        ScoresTableCompanion.insert(
+          personID: personID,
+          financialGlobalScore: Value(score),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
+  }
+
+  Future<void> updateHealthScore(int personID, double score) async {
+    final existing = await getScoreByPersonID(personID);
+    if (existing != null) {
+      await update(scoresTable).replace(
+        existing.copyWith(healthGlobalScore: score, updatedAt: DateTime.now()),
+      );
+    } else {
+      await into(scoresTable).insert(
+        ScoresTableCompanion.insert(
+          personID: personID,
+          healthGlobalScore: Value(score),
           updatedAt: Value(DateTime.now()),
         ),
       );
@@ -852,6 +899,10 @@ class ProjectsDAO extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteProject(int projectID) =>
       (delete(projectsTable)..where((t) => t.projectID.equals(projectID))).go();
+
+  Future<ProjectData?> getProjectById(int projectID) => (select(
+    projectsTable,
+  )..where((t) => t.projectID.equals(projectID))).getSingleOrNull();
 }
 
 // 4.4 PersonManagementDAO
@@ -1546,6 +1597,49 @@ LazyDatabase _openConnection() {
   });
 }
 
+// --- Focus Session ---
+@DataClassName('FocusSessionData')
+class FocusSessionsTable extends Table {
+  IntColumn get sessionID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get projectID => integer().nullable().references(
+    ProjectsTable,
+    #projectID,
+    onDelete: KeyAction.cascade,
+  )();
+  DateTimeColumn get startTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  IntColumn get durationSeconds => integer()();
+  TextColumn get status =>
+      text().withLength(min: 1, max: 20)(); // 'completed', 'interrupted'
+  IntColumn get taskID => integer().nullable().references(
+    GoalsTable,
+    #goalID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get notes => text().nullable()();
+}
+
+@DriftAccessor(tables: [FocusSessionsTable])
+class FocusSessionsDAO extends DatabaseAccessor<AppDatabase>
+    with _$FocusSessionsDAOMixin {
+  FocusSessionsDAO(super.db);
+
+  Future<int> insertSession(FocusSessionsTableCompanion session) {
+    return into(focusSessionsTable).insert(session);
+  }
+
+  Stream<List<FocusSessionData>> watchSessionsByPerson(int personId) {
+    return (select(
+      focusSessionsTable,
+    )..where((t) => t.personID.equals(personId))).watch();
+  }
+}
+
 // --- 6. Main Database Class ---
 
 @DriftDatabase(
@@ -1574,6 +1668,7 @@ LazyDatabase _openConnection() {
     ThemeTable,
     ProjectsTable,
     TransactionsTable,
+    FocusSessionsTable,
   ],
   daos: [
     ThemesTableDAO,
@@ -1593,13 +1688,14 @@ LazyDatabase _openConnection() {
     HealthMealDAO,
     ScoreDAO,
     ThemeDAO,
+    FocusSessionsDAO,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 12; // Increment schema version
+  int get schemaVersion => 16; // Increment schema version
 
   // Migration strategy would be needed here for a real app update
   @override
@@ -1628,6 +1724,18 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 4) {
           await m.createTable(sessionTable);
+        }
+        if (from < 15) {
+          await m.createTable(focusSessionsTable);
+        }
+        if (from < 16) {
+          try {
+            await customStatement(
+              "ALTER TABLE focus_sessions_table ADD COLUMN task_i_d INTEGER REFERENCES goals_table(goal_i_d) ON DELETE CASCADE;",
+            );
+          } catch (e) {
+            print('Error adding task_i_d column to focus_sessions_table: $e');
+          }
         }
         if (from < 5) {
           await m.createTable(healthMetricsTable);
@@ -1697,6 +1805,24 @@ class AppDatabase extends _$AppDatabase {
             );
           } catch (e) {
             print('Error adding affection column: $e');
+          }
+        }
+        if (from < 13) {
+          try {
+            await customStatement(
+              "ALTER TABLE projects_table ADD COLUMN category TEXT;",
+            );
+          } catch (e) {
+            print('Error adding category column to projects_table: $e');
+          }
+        }
+        if (from < 14) {
+          try {
+            await customStatement(
+              "ALTER TABLE transactions_table ADD COLUMN project_i_d INTEGER REFERENCES projects_table(project_i_d) ON DELETE CASCADE;",
+            );
+          } catch (e) {
+            print('Error adding project_i_d column to transactions_table: $e');
           }
         }
       },

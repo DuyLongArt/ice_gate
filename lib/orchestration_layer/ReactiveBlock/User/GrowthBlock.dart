@@ -3,13 +3,13 @@ import 'package:drift/drift.dart';
 import 'package:signals/signals.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/Protocol/User/GrowthProtocols.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/ProjectPoint.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/ProjectPoint.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 
 class GrowthBlock {
-  final goals = listSignal<GoalProtocol>([]);
-  final habits = listSignal<HabitProtocol>([]);
-  final skills = listSignal<SkillProtocol>([]);
+  final goals = signal<List<GoalProtocol>>([]);
+  final habits = signal<List<HabitProtocol>>([]);
+  final skills = signal<List<SkillProtocol>>([]);
 
   StreamSubscription? _goalsSubscription;
   StreamSubscription? _habitsSubscription;
@@ -42,6 +42,7 @@ class GrowthBlock {
                 targetDate: e.targetDate,
                 completionDate: e.completionDate,
                 progressPercentage: e.progressPercentage,
+                projectID: e.projectID,
               ),
             )
             .toList(),

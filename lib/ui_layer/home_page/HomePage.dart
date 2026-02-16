@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/GamificationService.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart'
     show InternalWidgetBlock;
 // import 'package:ice_shield/initial_layer/FireAPI/UrlNavigate.dart' as WidgetNavigatorAction;
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
-import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
@@ -28,6 +29,7 @@ import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectDetailsPage.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
+import 'package:ice_shield/ui_layer/ReusableWidget/ScoreAnimations.dart';
 
 class HomePage extends StatefulWidget {
   final String title;
@@ -111,9 +113,14 @@ class _HomePageState extends State<HomePage> {
   late PersonBlock personBlock;
   late HealthMetricsDAO healthMetricsDAO;
   late Map<String, HealthMetric> healthMetricsData = {};
+  late Map<String, HealthMetric> financeMetricsData = {};
+  late Map<String, HealthMetric> socialMetricsData = {};
   late ScoreBlock scoreBlock;
+  late FinanceBlock financeBlock;
   late ExternalWidgetBlock externalWidgetBlock;
   late GrowthBlock growthBlock;
+  EffectCleanup? _levelEffect;
+  final _levelUpToShow = signal<int?>(null);
 
   late Stream<StepCount> _stepCountStream;
   late Stream<PedestrianStatus> _pedestrianStatusStream;
@@ -131,6 +138,7 @@ class _HomePageState extends State<HomePage> {
     scoreBlock = context.read<ScoreBlock>();
     authBlock.fetchUser();
     personBlock = context.read<PersonBlock>();
+    financeBlock = context.read<FinanceBlock>();
     growthBlock = context.read<GrowthBlock>();
     healthMetricsDAO = database.healthMetricsDAO;
 
@@ -156,16 +164,23 @@ class _HomePageState extends State<HomePage> {
     }
 
     void initPlatformState() {
-      // Listen to step counts
-      _stepCountStream = Pedometer.stepCountStream;
-      _stepCountStream.listen(onStepCount).onError(onStepCountError);
+      try {
+        // Listen to step counts
+        _stepCountStream = Pedometer.stepCountStream;
+        _stepCountStream.listen(onStepCount).onError(onStepCountError);
 
-      // Listen to status (walking, stopped, etc.)
-      _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
-      _pedestrianStatusStream
-          .listen(onPedestrianStatusUpdate)
-          .onError(onPedestrianStatusError);
+        // Listen to status (walking, stopped, etc.)
+        _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
+        _pedestrianStatusStream
+            .listen(onPedestrianStatusUpdate)
+            .onError(onPedestrianStatusError);
+      } catch (e) {
+        print("Pedometer initialization error: $e");
+      }
     }
+
+    // Call initPlatformState safely
+    initPlatformState();
 
     final jwtValue = authBlock.jwt.value;
     if (jwtValue != null) {
@@ -195,6 +210,22 @@ class _HomePageState extends State<HomePage> {
         }
       });
     });
+
+    // Level Up effect
+    int? lastLevel;
+    _levelEffect = effect(() {
+      final currentLevel = scoreBlock.globalLevel.value;
+      if (lastLevel != null && currentLevel > lastLevel!) {
+        _levelUpToShow.value = currentLevel;
+      }
+      lastLevel = currentLevel;
+    });
+  }
+
+  @override
+  void dispose() {
+    _levelEffect?.call();
+    super.dispose();
   }
 
   void onStepCount(StepCount event) {
@@ -344,23 +375,34 @@ class _HomePageState extends State<HomePage> {
                           '/health',
                           scoreBlock.score.healthGlobalScore,
                         ),
-                        _buildQuickAccessCard(
-                          context,
-                          'Finance',
-                          Icons.account_balance_wallet_rounded,
-                          Colors.blue,
-                          '\$5,420 • Up 12%',
-                          '/finance',
-                          scoreBlock.score.financialGlobalScore,
-                        ),
-                        _buildQuickAccessCard(
-                          context,
-                          'Social',
-                          Icons.people_alt_rounded,
-                          Colors.purple,
-                          '48 friends • 3 new',
-                          '/social',
-                          scoreBlock.score.socialGlobalScore,
+                        Watch((context) {
+                          final balance = financeBlock.totalBalance.value;
+                          final spending = financeBlock.monthlySpending.value;
+                          return _buildQuickAccessCard(
+                            context,
+                            'Finance',
+                            Icons.account_balance_wallet_rounded,
+                            Colors.blue,
+                            '\$${balance.toStringAsFixed(0)} • -\$${spending.toStringAsFixed(0)} this mo',
+                            '/finance',
+                            scoreBlock.score.financialGlobalScore,
+                          );
+                        }),
+                        StreamBuilder<List<PersonData>>(
+                          stream: database.personDAO.getAllPersons(),
+                          builder: (context, snapshot) {
+                            final count = snapshot.data?.length ?? 0;
+                            print('count: ${snapshot.data}');
+                            return _buildQuickAccessCard(
+                              context,
+                              'Social',
+                              Icons.people_alt_rounded,
+                              Colors.purple,
+                              '$count relationships',
+                              '/social',
+                              scoreBlock.score.socialGlobalScore,
+                            );
+                          },
                         ),
                         Watch((context) {
                           final projectGoals = growthBlock.goals.value
@@ -434,6 +476,7 @@ class _HomePageState extends State<HomePage> {
                           final widget = internalWidgets[index - 1];
                           return Padding(
                             padding: const EdgeInsets.only(right: 16),
+
                             child: SizedBox(
                               width: 110,
                               child: _buildGridItem(context, widget),
@@ -515,6 +558,15 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         }),
+        floatingActionButton: Watch((context) {
+          final level = _levelUpToShow.value;
+          if (level == null) return const SizedBox.shrink();
+          return LevelUpCelebration(
+            level: level,
+            onFinished: () => _levelUpToShow.value = null,
+          );
+        }),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
     );
   }
@@ -690,135 +742,168 @@ class _HomePageState extends State<HomePage> {
     double scoreData,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final safeScore = scoreData.isFinite ? scoreData.toInt() : 0;
+    final level = GamificationService.getLevel(safeScore);
+    final progress = GamificationService.getProgressToNextLevel(safeScore);
+
     return Container(
       width: 200,
-      margin: const EdgeInsets.only(right: 5),
+      margin: const EdgeInsets.only(right: 12),
       child: Card(
         elevation: 0,
+        color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
-          side: BorderSide(color: color.withOpacity(0.1)),
+          side: BorderSide(color: color.withOpacity(0.12)),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => context.push(route),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [color.withOpacity(0.12), color.withOpacity(0.02)],
+          child: Stack(
+            children: [
+              // Glassmorphism Background
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color.withOpacity(0.18),
+                        color.withOpacity(0.08),
+                        color.withOpacity(0.02),
+                      ],
+                      stops: const [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(icon, color: color, size: 24),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-
-                        child: Column(
-                          key: ValueKey(
-                            title,
-                          ), // Ensure state preservation for animation
-                          children: [
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(
-                                begin: 0,
-                                end: (scoreData / 100).floor() + 1,
+              // Subtle Glow
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 1.0, end: 1.0),
+                          duration: const Duration(milliseconds: 1000),
+                          builder: (context, scale, child) {
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: color.withOpacity(0.2),
+                                      blurRadius: 8,
+                                      spreadRadius: -2,
+                                    ),
+                                  ],
+                                ),
+                                child: Icon(icon, color: color, size: 28),
                               ),
-                              duration: const Duration(milliseconds: 1000),
-                              curve: Curves.easeOutExpo,
-                              builder: (context, value, child) {
-                                return Text(
-                                  "LV ${value.toInt()}",
+                            );
+                          },
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          child: ScorePulseWrapper(
+                            value: scoreData,
+                            child: Column(
+                              key: ValueKey(title),
+                              children: [
+                                RollingScoreText(
+                                  value: level,
+                                  prefix: "LV ",
                                   style: TextStyle(
                                     color: color,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
                                   ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 10),
-                            TweenAnimationBuilder<double>(
-                              tween: Tween<double>(begin: 0, end: scoreData),
-                              duration: const Duration(milliseconds: 1500),
-                              curve: Curves.easeOutExpo,
-                              builder: (context, value, child) {
-                                return Text(
-                                  "P: ${value.toStringAsFixed(1)}",
+                                ),
+                                const SizedBox(height: 12),
+                                RollingScoreText(
+                                  value: scoreData,
+                                  prefix: "P: ",
+                                  decimalPlaces: 1,
                                   style: TextStyle(
-                                    color: color,
-                                    fontSize: 15,
+                                    color: color.withOpacity(0.9),
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w900,
                                   ),
-                                );
-                              },
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
+                      ],
+                    ),
+                    const Spacer(),
+                    AutoSizeText(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                        color: colorScheme.onSurface,
+                        letterSpacing: -0.5,
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  AutoSizeText(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
+                      maxLines: 1,
                     ),
-                    maxLines: 1,
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween<double>(
-                        begin: 0,
-                        end: (scoreData % 100) / 100,
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0, end: progress),
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.easeOutQuart,
+                        builder: (context, value, child) {
+                          return LinearProgressIndicator(
+                            value: value.clamp(0.0, 1.0),
+                            backgroundColor: color.withOpacity(0.1),
+                            valueColor: AlwaysStoppedAnimation<Color>(color),
+                            minHeight: 6,
+                          );
+                        },
                       ),
-                      duration: const Duration(milliseconds: 1000),
-                      curve: Curves.easeOutCubic,
-                      builder: (context, value, child) {
-                        return LinearProgressIndicator(
-                          value: value.clamp(0.0, 1.0),
-                          backgroundColor: color.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(color),
-                          minHeight: 4,
-                        );
-                      },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  AutoSizeText(
-                    subtitle,
-                    style: TextStyle(
-                      color: color.withOpacity(0.8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(height: 10),
+                    AutoSizeText(
+                      subtitle,
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.7),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -842,7 +927,7 @@ class _HomePageState extends State<HomePage> {
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
               color: colorScheme.primary.withOpacity(0.2),
-              width: 2,
+              width: 5,
               style: BorderStyle
                   .none, // Can change to solid for dashed effect if custom painter
             ),
@@ -854,6 +939,12 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withOpacity(0.1),
+                  border: Border.all(
+                    color: colorScheme.primary.withOpacity(0.2),
+                    width: 5,
+                    style: BorderStyle
+                        .none, // Can change to solid for dashed effect if custom painter
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -872,16 +963,22 @@ class _HomePageState extends State<HomePage> {
     final item = Container(
       width: 120,
       decoration: BoxDecoration(
+        
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
+        
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 15,
             offset: const Offset(0, 8),
+            
           ),
         ],
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)
+        ,width: 5
+        
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -930,9 +1027,14 @@ class _HomePageState extends State<HomePage> {
               },
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                
+                decoration: BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withOpacity(0.4),
+                    width: 5,
+                  ),
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 14),
               ),
@@ -964,6 +1066,7 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
+        
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -971,7 +1074,7 @@ class _HomePageState extends State<HomePage> {
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4),width: 5),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1026,8 +1129,9 @@ class _HomePageState extends State<HomePage> {
               },
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: Colors.red,
+                  border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4), width: 5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 14),
@@ -1049,12 +1153,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ],
     );
-  }
-
-  void _navigateExternalUrl(String fullUrl) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => WebViewPage(url: fullUrl)));
   }
 
   void _showRenameInternalDialog(

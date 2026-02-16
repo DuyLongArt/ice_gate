@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/GamificationService.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/Const.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/GamificationService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:provider/provider.dart';
@@ -60,16 +60,18 @@ class _SocialPageState extends State<SocialPage>
     final healthMealDao = context.read<HealthMealDAO>();
     final personDao = context.read<PersonManagementDAO>();
     final scoreDao = context.read<ScoreDAO>();
+    final financeDao = context.read<FinanceDAO>();
     final service = GamificationService(
       healthMetricsDao,
       healthMealDao,
       personDao,
+      financeDao,
     );
 
     // Assume current user ID is 1
     final totalPoints = await service.calculateTotalPoints(1);
-    final level = service.getLevel(totalPoints);
-    final progress = service.getProgressToNextLevel(totalPoints);
+    final level = GamificationService.getLevel(totalPoints);
+    final progress = GamificationService.getProgressToNextLevel(totalPoints);
 
     // Calculate social-specific points and push to global score
     try {
@@ -86,6 +88,27 @@ class _SocialPageState extends State<SocialPage>
       await scoreDao.updateSocialScore(1, socialScore);
     } catch (e) {
       print('Error updating social score: $e');
+    }
+
+    // Calculate finance-specific points and push to global score
+    try {
+      final accounts = await financeDao.watchAccounts(1).first;
+      final assets = await financeDao.watchAssets(1).first;
+
+      double totalNetWorth = 0;
+      for (var acc in accounts) {
+        totalNetWorth += acc.balance;
+      }
+      for (var asset in assets) {
+        totalNetWorth += (asset.currentEstimatedValue ?? 0.0);
+      }
+
+      final financeScore =
+          ((totalNetWorth / FINANCE_SAVINGS_MILESTONE) *
+          FINANCE_SAVINGS_POINTS);
+      await scoreDao.updateFinancialScore(1, financeScore);
+    } catch (e) {
+      print('Error updating finance score: $e');
     }
 
     if (mounted) {

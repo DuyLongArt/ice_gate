@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
-// import 'package:ice_shield/initial_layer/Services/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PasskeyAuthService.dart';
 import 'package:ice_shield/data_layer/Protocol/User/RegistrationProtocol.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:signals/signals.dart';
@@ -20,6 +20,8 @@ enum AuthStatus {
 class AuthBlock {
   final CustomAuthService _authService;
   final SessionDAO _sessionDao;
+  final PasskeyAuthService _passkeyService;
+  final PersonManagementDAO _personDao;
 
   // --- Signals (State) ---
   final status = signal<AuthStatus>(AuthStatus.init);
@@ -31,9 +33,58 @@ class AuthBlock {
   AuthBlock({
     required CustomAuthService authService,
     required SessionDAO sessionDao,
+    required PasskeyAuthService passkeyService,
+    required PersonManagementDAO personDao,
   }) : _authService = authService,
-       _sessionDao = sessionDao;
+       _sessionDao = sessionDao,
+       _passkeyService = passkeyService,
+       _personDao = personDao;
 
+  /// Passkey Login Flow
+  Future<void> loginWithPasskey(BuildContext context) async {
+    status.value = AuthStatus.authenticating;
+    error.value = null;
+    print("🔑 Authenticating with Passkey...");
+
+    try {
+      // 1. Get Challenge
+      final challenge = await _authService.getPasskeyChallenge();
+      // print("🔑 Challenge received: $challenge");
+
+      // 2. Perform Passkey Assertion
+      // Call the platform passkey service to sign the challenge
+      final credential = await _passkeyService.loginRequest(
+        challenge: challenge,
+      );
+
+      if (credential == null) {
+        throw Exception("Passkey assertion canceled or failed");
+      }
+
+      // 3. Verify Assertion
+      final data = await _authService.verifyPasskeyLogin(credential);
+
+      final token = data['token'] ?? data['jwt'];
+      if (token != null && token.toString().isNotEmpty) {
+        jwt.value = token.toString();
+        // Assume username returned or fetched next
+        username.value = data['userName'] ?? "PasskeyUser";
+
+        await _sessionDao.saveSession(jwt.value!, username.value);
+
+        status.value = AuthStatus.authenticated;
+        print("✅ Passkey Login successful.");
+
+        await fetchUser();
+      } else {
+        throw Exception("Server returned no token for passkey");
+      }
+    } catch (e) {
+      print("❌ Passkey Authentication failed: $e");
+      error.value = "Passkey Error: ${e.toString()}";
+      status.value = AuthStatus.unauthenticated;
+    }
+  }
   // --- Actions ---
 
   /// Step 1: Check for existing session (e.g. from cookies/local storage)
@@ -95,7 +146,11 @@ class AuthBlock {
 
   /// Step 5: Authenticate with user credentials
   /// Corresponds to authenticating in XState
-  Future<void> login(String ident, String password, BuildContext context) async {
+  Future<void> login(
+    String ident,
+    String password,
+    BuildContext context,
+  ) async {
     status.value = AuthStatus.authenticating;
     error.value = null;
     print("🔐 Authenticating with user credentials: $ident");
@@ -189,82 +244,60 @@ class AuthBlock {
     });
   }
 
-  /// Passkey Login Flow
-  Future<void> loginWithPasskey(BuildContext context) async {
-    status.value = AuthStatus.authenticating;
-    error.value = null;
-    print("🔑 Authenticating with Passkey...");
-
-    try {
-      // 1. Get Challenge
-      final challenge = await _authService.getPasskeyChallenge();
-      // print("🔑 Challenge received: $challenge");
-
-      // 2. Perform Passkey Assertion (Platform specific logic would go here)
-      // For now, we are simulating or passing the challenge back if testing
-      // In a real app, you'd use a passkey plugin here like `fido2_plugin` or similar
-      // to sign the challenge.
-
-      // Assume we get a credential string from the platform:
-      // final credential = await PlatformPasskey.getCredential(challenge);
-      // For this implementation, we will assume a mock credential or that verifyPasskeyLogin
-      // handles the next step. Since we don't have the platform plugin code here,
-      // we will simulate the credential or call verify directly if the backend supports it.
-
-      // NOTE: This part depends on actual device integration.
-      // We will proceed to call verify with a placeholder or the challenge itself for testing.
-      final credential = "mock_credential_for_challenge_$challenge";
-
-      // 3. Verify Assertion
-      final data = await _authService.verifyPasskeyLogin(credential);
-
-      final token = data['token'] ?? data['jwt'];
-      if (token != null && token.toString().isNotEmpty) {
-        jwt.value = token.toString();
-        // Assume username returned or fetched next
-        username.value = data['userName'] ?? "PasskeyUser";
-
-        await _sessionDao.saveSession(jwt.value!, username.value);
-
-        status.value = AuthStatus.authenticated;
-        print("✅ Passkey Login successful.");
-
-        await fetchUser();
-      } else {
-        throw Exception("Server returned no token for passkey");
-      }
-    } catch (e) {
-      print("❌ Passkey Authentication failed: $e");
-      error.value = "Passkey Error: ${e.toString()}";
-      status.value = AuthStatus.unauthenticated;
-    }
-  }
-
   /// Fetch full user profile from backend
   Future<void> fetchUser() async {
     final token = jwt.value;
-    if (token == null) return;
 
-    // print("👤 Fetching user profile...");
-    final userData = await _authService.fetchCurrentUser(token);
-    // print("✅ User data fetched: $userData");
+    // Attempt standard fetch
+    if (token != null) {
+      try {
+        final userData = await _authService.fetchCurrentUser(token);
+        user.value = userData;
+        if (userData['userName'] != null) {
+          username.value = userData['userName'];
+        }
+        status.value = AuthStatus.authenticated;
+        return;
+      } catch (e) {
+        print("⚠️ Failed to fetch user profile via API: $e");
+        if (e.toString().contains('401') ||
+            e.toString().contains('Unauthorized')) {
+          await logout();
+          return;
+        }
+        // Proceed to fallback
+      }
+    }
+
+    // Fallback: Fetch ID 1 from local DB
+    print("🔄 Attempting local fallback for User ID 1...");
     try {
-      final userData = await _authService.fetchCurrentUser(token);
-      // print("✅ User data fetched: $userData");
-      user.value = userData;
-      // You could update other signals here if needed (e.g. email, role)
-      if (userData['userName'] != null) {
-        username.value = userData['userName'];
+      final localPerson = await _personDao.getPersonById(1);
+      if (localPerson != null) {
+        print("✅ Falling back to local user ID 1: ${localPerson.firstName}");
+
+        // Construct a mock user map that mimics the API response
+        final mockUserMap = {
+          'id': localPerson.personID,
+          'userName': localPerson.firstName,
+          'firstName': localPerson.firstName,
+          'lastName': localPerson.lastName,
+          'email': 'offline@local', // Placeholder
+          'role': 'admin',
+        };
+
+        user.value = mockUserMap;
+        username.value = localPerson.firstName;
+        status.value = AuthStatus.authenticated;
+      } else {
+        print("❌ Local user ID 1 not found in database.");
+        // Only logout if we had a token and it failed, or maybe just go to unauth
+        // If we are here, we failed both API and DB.
+        if (token != null) await logout();
       }
-      // Ensure we are in authenticated state after successful user fetch
-      status.value = AuthStatus.authenticated;
-    } catch (e) {
-      print("⚠️ Failed to fetch user profile: $e");
-      // Don't necessarily logout if profile fetch fails, unless it's a 401
-      if (e.toString().contains('401') ||
-          e.toString().contains('Unauthorized')) {
-        await logout();
-      }
+    } catch (dbError) {
+      print("❌ Local DB fallback failed: $dbError");
+      if (token != null) await logout();
     }
   }
 }

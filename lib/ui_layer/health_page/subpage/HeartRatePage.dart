@@ -1,5 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 
 class HeartRatePage extends StatefulWidget {
   const HeartRatePage({super.key});
@@ -9,14 +12,71 @@ class HeartRatePage extends StatefulWidget {
 }
 
 class _HeartRatePageState extends State<HeartRatePage> {
-  int currentHeartRate = 72;
-  final List<int> recentReadings = [68, 70, 72, 75, 71, 69, 72];
+  int currentHeartRate = 0;
+  final List<int> recentReadings = [];
   final TextEditingController _bpmController = TextEditingController();
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
 
   @override
   void dispose() {
     _bpmController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    final dao = context.read<HealthMetricsDAO>();
+    final today = DateTime.now();
+    final data = await dao.getMetricsForDate(1, today);
+    if (mounted) {
+      setState(() {
+        currentHeartRate = data?.heartRate ?? 0;
+        if (currentHeartRate > 0) {
+          recentReadings.add(currentHeartRate);
+        }
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveHeartRate(int bpm) async {
+    final dao = context.read<HealthMetricsDAO>();
+    final today = DateTime.now();
+
+    try {
+      final currentMetrics = await dao.getMetricsForDate(1, today);
+
+      if (currentMetrics != null) {
+        await dao.insertOrUpdateMetrics(
+          currentMetrics
+              .toCompanion(true)
+              .copyWith(
+                heartRate: drift.Value(bpm),
+                updatedAt: drift.Value(DateTime.now()),
+              ),
+        );
+      } else {
+        await dao.insertOrUpdateMetrics(
+          HealthMetricsTableCompanion.insert(
+            personID: 1,
+            date: today,
+            heartRate: drift.Value(bpm),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving heart rate: $e')));
+      }
+    }
   }
 
   int get averageHeartRate {
@@ -58,6 +118,7 @@ class _HeartRatePageState extends State<HeartRatePage> {
         }
         _bpmController.clear();
       });
+      _saveHeartRate(bpm);
     }
   }
 
@@ -68,258 +129,345 @@ class _HeartRatePageState extends State<HeartRatePage> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: Stack(
-        children: [
-          // Background Glow
-          Positioned(
-            top: -50,
-            left: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: zoneColor.withValues(alpha: 0.15),
-              ),
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20.0,
-                vertical: 10,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      Text(
-                        'Heart Rate',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 40),
-                    ],
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                // Background Glow
+                Positioned(
+                  top: -50,
+                  left: -50,
+                  child: Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: zoneColor.withValues(alpha: 0.15),
+                    ),
                   ),
-                  const SizedBox(height: 30),
+                ),
 
-                  // Main Heart Rate Display
-                  Center(
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(32),
-                        boxShadow: [
-                          BoxShadow(
-                            color: zoneColor.withValues(alpha: 0.2),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: zoneColor.withValues(alpha: 0.3),
-                          width: 2,
+                SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0,
+                      vertical: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 20,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                            Text(
+                              'Heart Rate',
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(width: 40),
+                          ],
                         ),
-                      ),
-                      child: Column(
-                        children: [
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 1.0, end: 1.2),
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.elasticOut,
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: value,
-                                child: Icon(
-                                  Icons.favorite_rounded,
-                                  color: zoneColor,
-                                  size: 60,
+                        const SizedBox(height: 30),
+
+                        // Main Heart Rate Display
+                        Center(
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: zoneColor.withValues(alpha: 0.2),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
                                 ),
+                              ],
+                              border: Border.all(
+                                color: zoneColor.withValues(alpha: 0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween(begin: 1.0, end: 1.2),
+                                  duration: const Duration(milliseconds: 600),
+                                  curve: Curves.elasticOut,
+                                  builder: (context, value, child) {
+                                    return Transform.scale(
+                                      scale: value,
+                                      child: Icon(
+                                        Icons.favorite_rounded,
+                                        color: zoneColor,
+                                        size: 60,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(
+                                      currentHeartRate > 0
+                                          ? currentHeartRate.toString()
+                                          : '--',
+                                      style: textTheme.displayLarge?.copyWith(
+                                        color: colorScheme.onSurface,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 72,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'bpm',
+                                      style: textTheme.titleLarge?.copyWith(
+                                        color: colorScheme.onSurface.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                if (currentHeartRate > 0)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: zoneColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      heartRateZone.toUpperCase(),
+                                      style: textTheme.titleSmall?.copyWith(
+                                        color: zoneColor,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ),
+                                if (currentHeartRate == 0)
+                                  Text(
+                                    'Add a reading below to get started',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // Statistics Grid
+                        if (recentReadings.isNotEmpty)
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              final cardWidth = (constraints.maxWidth - 15) / 2;
+                              return Wrap(
+                                spacing: 15,
+                                runSpacing: 15,
+                                children: [
+                                  _modernStatCard(
+                                    context,
+                                    'Average',
+                                    averageHeartRate.toString(),
+                                    'bpm',
+                                    Icons.analytics_rounded,
+                                    cardWidth,
+                                  ),
+                                  _modernStatCard(
+                                    context,
+                                    'Peak',
+                                    maxHeartRate.toString(),
+                                    'bpm',
+                                    Icons.trending_up_rounded,
+                                    cardWidth,
+                                  ),
+                                  _modernStatCard(
+                                    context,
+                                    'Resting',
+                                    minHeartRate.toString(),
+                                    'bpm',
+                                    Icons.trending_down_rounded,
+                                    cardWidth,
+                                  ),
+                                  _modernStatCard(
+                                    context,
+                                    'Samples',
+                                    recentReadings.length.toString(),
+                                    'total',
+                                    Icons.history_toggle_off_rounded,
+                                    cardWidth,
+                                  ),
+                                ],
                               );
                             },
                           ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                currentHeartRate.toString(),
-                                style: textTheme.displayLarge?.copyWith(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 72,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'bpm',
-                                style: textTheme.titleLarge?.copyWith(
-                                  color: colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: zoneColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              heartRateZone.toUpperCase(),
-                              style: textTheme.titleSmall?.copyWith(
-                                color: zoneColor,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                  // Statistics Grid
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final cardWidth = (constraints.maxWidth - 15) / 2;
-                      return Wrap(
-                        spacing: 15,
-                        runSpacing: 15,
-                        children: [
-                          _modernStatCard(
-                            context,
-                            'Average',
-                            averageHeartRate.toString(),
-                            'bpm',
-                            Icons.analytics_rounded,
-                            cardWidth,
+                        // Manual Entry Section
+                        Text(
+                          'Manual Entry',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          _modernStatCard(
-                            context,
-                            'Peak',
-                            maxHeartRate.toString(),
-                            'bpm',
-                            Icons.trending_up_rounded,
-                            cardWidth,
-                          ),
-                          _modernStatCard(
-                            context,
-                            'Resting',
-                            minHeartRate.toString(),
-                            'bpm',
-                            Icons.trending_down_rounded,
-                            cardWidth,
-                          ),
-                          _modernStatCard(
-                            context,
-                            'Samples',
-                            recentReadings.length.toString(),
-                            'total',
-                            Icons.history_toggle_off_rounded,
-                            cardWidth,
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 40),
-
-                  // Manual Entry Section
-                  Text(
-                    'Manual Entry',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainer.withValues(
-                            alpha: 0.5,
-                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        ClipRRect(
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.2,
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainer.withValues(
+                                  alpha: 0.5,
+                                ),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _bpmController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: InputDecoration(
+                                        hintText: 'Enter BPM',
+                                        filled: true,
+                                        fillColor: colorScheme.surface,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 16,
+                                            ),
+                                      ),
+                                      onSubmitted: (_) => _addReading(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  ElevatedButton(
+                                    onPressed: _addReading,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colorScheme.primary,
+                                      foregroundColor: colorScheme.onPrimary,
+                                      padding: const EdgeInsets.all(16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: const Icon(Icons.add_rounded),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        child: Row(
+
+                        const SizedBox(height: 24),
+
+                        // Quick Entry Buttons
+                        Text(
+                          'Quick Entry',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _bpmController,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  hintText: 'Enter BPM',
-                                  filled: true,
-                                  fillColor: colorScheme.surface,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 15),
-                            ElevatedButton(
-                              onPressed: _addReading,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colorScheme.primary,
-                                foregroundColor: colorScheme.onPrimary,
-                                padding: const EdgeInsets.all(16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: const Icon(Icons.add_rounded),
-                            ),
+                            _quickBpmButton(60, 'Rest', Colors.blue),
+                            _quickBpmButton(75, 'Normal', Colors.green),
+                            _quickBpmButton(110, 'Active', Colors.orange),
+                            _quickBpmButton(150, 'Intense', Colors.red),
                           ],
                         ),
-                      ),
+
+                        const SizedBox(height: 40),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 40),
-                ],
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _quickBpmButton(int bpm, String label, Color color) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () {
+            setState(() {
+              currentHeartRate = bpm;
+              recentReadings.add(bpm);
+              if (recentReadings.length > 10) {
+                recentReadings.removeAt(0);
+              }
+            });
+            _saveHeartRate(bpm);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Text(
+              '$bpm',
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 

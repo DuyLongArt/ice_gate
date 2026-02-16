@@ -6,12 +6,15 @@
     "color_scheme": {
         "primary": "0xFFD4AF37",
         "onPrimary": "0xFF000000",
+        "primaryContainer": "0xFF4D3D00",
+        "onPrimaryContainer": "0xFFD4AF37",
         "secondary": "0xFF8E8E8E",
         "onSecondary": "0xFFFFFFFF",
-        "surface": "0xFF121212",
+        "surface": "0xFF0F0F0F",
         "onSurface": "0xFFD4AF37",
-        "background": "0xFF000000",
-        "onBackground": "0xFFFFFFFF"
+        "surfaceContainer": "0xFF1A1A1A",
+        "outline": "0xFF333333",
+        "outlineVariant": "0xFFD4AF37"
     },
     "components": {
         "appBar": {

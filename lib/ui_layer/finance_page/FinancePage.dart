@@ -69,6 +69,7 @@ class FinancePage extends StatefulWidget {
         'entertainment',
         'health',
         'education',
+        'investing',
         'general',
       ],
       'income': [
@@ -189,6 +190,7 @@ class _FinancePageState extends State<FinancePage> {
   final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '\$');
   late final List<FinanceAsset> _stocks = [];
   final List<FinanceAsset> _coins = FinanceService.getCoins();
+  final Map<int, String> _projectNamesCache = {};
 
   Future<void> _initWatchlist() async {
     const List<String> myTickers = ['FPT', 'VNM', 'HPG', 'SSI'];
@@ -240,7 +242,11 @@ class _FinancePageState extends State<FinancePage> {
             ),
 
             // Portfolio Summary
-            SliverToBoxAdapter(child: _buildPortfolioHeader(context)),
+            SliverToBoxAdapter(
+              child: Watch((context) {
+                return _buildPortfolioHeader(context, financeBlock);
+              }),
+            ),
 
             // Savings & Spending Overview
             SliverToBoxAdapter(
@@ -319,21 +325,22 @@ class _FinancePageState extends State<FinancePage> {
                 ),
               );
             }),
-
-            // Stocks Section
-           
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPortfolioHeader(BuildContext context) {
+  Widget _buildPortfolioHeader(BuildContext context, FinanceBlock block) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final totalBalance = FinanceService.getTotalBalance();
-    final totalChange = FinanceService.getTotalChange();
-    final changePercent = FinanceService.getTotalChangePercentage();
+    final totalBalance = block.totalBalance.value;
+
+    // For now, keep change/percent static or calculated if possible.
+    // Calculating "Change" requires history which we don't have easily yet.
+    // I'll leave change as dummy or 0 for now to avoid errors.
+    final totalChange = 0.0;
+    final changePercent = 0.0;
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -357,7 +364,7 @@ class _FinancePageState extends State<FinancePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'TOTAL BALANCE',
+            'TOTAL NET WORTH', // Changed from Total Balance to be more accurate
             style: textTheme.labelSmall?.copyWith(
               color: colorScheme.onPrimary.withOpacity(0.8),
               letterSpacing: 1.2,
@@ -554,6 +561,13 @@ class _FinancePageState extends State<FinancePage> {
       'entertainment': Icons.movie_rounded,
       'health': Icons.medical_services_rounded,
       'education': Icons.school_rounded,
+      'investing': Icons.trending_up_rounded,
+      'crypto': Icons.currency_bitcoin_rounded,
+      'stock': Icons.show_chart_rounded,
+      'real_estate': Icons.home_work_rounded,
+      'salary': Icons.payments_rounded,
+      'bonus': Icons.card_giftcard_rounded,
+      'gift': Icons.redeem_rounded,
       'general': Icons.category_rounded,
     };
 
@@ -569,6 +583,13 @@ class _FinancePageState extends State<FinancePage> {
       'entertainment': Colors.purple,
       'health': Colors.red,
       'education': Colors.cyan,
+      'investing': Colors.indigo,
+      'crypto': Colors.amber,
+      'stock': Colors.lightGreen,
+      'real_estate': Colors.brown,
+      'salary': Colors.green,
+      'bonus': Colors.orangeAccent,
+      'gift': Colors.pinkAccent,
       'general': Colors.grey,
     };
 
@@ -672,7 +693,7 @@ class _FinancePageState extends State<FinancePage> {
     FinanceBlock financeBlock,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isExpense = txn.type == 'expense';
+    final isExpense = txn.type == 'expense' || txn.type == 'investment';
     final isSavings = txn.type == 'savings';
     final color = isExpense
         ? Colors.red
@@ -740,12 +761,18 @@ class _FinancePageState extends State<FinancePage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    '${txn.category[0].toUpperCase()}${txn.category.substring(1)} • ${DateFormat.MMMd().format(txn.transactionDate)}',
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                      fontSize: 11,
-                    ),
+                  Row(
+                    children: [
+                      if (txn.projectID != null)
+                        _buildProjectTag(context, txn.projectID!),
+                      Text(
+                        '${txn.category[0].toUpperCase()}${txn.category.substring(1)} • ${DateFormat.MMMd().format(txn.transactionDate)}',
+                        style: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.5),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -759,6 +786,45 @@ class _FinancePageState extends State<FinancePage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProjectTag(BuildContext context, int projectID) {
+    if (_projectNamesCache.containsKey(projectID)) {
+      return _renderProjectTag(context, _projectNamesCache[projectID]!);
+    }
+
+    return FutureBuilder<ProjectData?>(
+      future: context.read<AppDatabase>().projectsDAO.getProjectById(projectID),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          _projectNamesCache[projectID] = snapshot.data!.name;
+          return _renderProjectTag(context, snapshot.data!.name);
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _renderProjectTag(BuildContext context, String name) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 4.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          name.toUpperCase(),
+          style: TextStyle(
+            color: colorScheme.primary,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );

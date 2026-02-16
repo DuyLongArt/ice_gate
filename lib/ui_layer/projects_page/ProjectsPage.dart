@@ -120,10 +120,12 @@ class ProjectsPage extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _ActionCard(
-                            icon: Icons.auto_graph_rounded,
-                            label: 'Stats',
+                            icon: Icons.timer_rounded,
+                            label: 'Focus',
                             color: Colors.purple,
-                            onTap: () {},
+                            onTap: () {
+                              context.push('/projects/focus');
+                            },
                           ),
                         ),
                       ],

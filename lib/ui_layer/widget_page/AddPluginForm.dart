@@ -169,50 +169,49 @@ class _WidgetFormDataState extends State<AddPluginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return  ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 6000),
-        child: SingleChildScrollView(
-          child: Container( 
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _buildHeader(),
-                const SizedBox(height: 24),
-                _buildMainTabs(),
-                const SizedBox(height: 24),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 6000),
+      child: SingleChildScrollView(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24.0),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildMainTabs(),
+              const SizedBox(height: 24),
 
-                if (_selectedTab == 0)
-                  _buildInternalGrid()
-                else ...[
-                  _buildExternalToggle(),
-                  const SizedBox(height: 20),
-                  if (_isPluginMode)
-                    _buildExternalPluginGrid()
-                  else
-                    _buildCustomUrlForm(),
-                ],
-
-                const SizedBox(height: 32),
-                _buildSubmitButton(),
+              if (_selectedTab == 0)
+                _buildInternalGrid()
+              else ...[
+                _buildExternalToggle(),
+                const SizedBox(height: 20),
+                if (_isPluginMode)
+                  _buildExternalPluginGrid()
+                else
+                  _buildCustomUrlForm(),
               ],
-            ),
+
+              const SizedBox(height: 32),
+              _buildSubmitButton(),
+            ],
           ),
         ),
-    
+      ),
     );
   }
 
@@ -329,6 +328,13 @@ class _WidgetFormDataState extends State<AddPluginForm> {
         category: PluginCategory.productivity,
       ),
       _InternalPlugin(
+        name: 'Focus',
+        url: '/health/focus',
+        icon: Icons.timer_rounded,
+        description: 'Immersive focus mode.',
+        category: PluginCategory.productivity,
+      ),
+      _InternalPlugin(
         name: 'Social',
         url: '/social',
         icon: Icons.people_alt_rounded,
@@ -340,6 +346,27 @@ class _WidgetFormDataState extends State<AddPluginForm> {
         url: '/profile',
         icon: Icons.person_rounded,
         description: 'View user achievements.',
+        category: PluginCategory.other,
+      ),
+      _InternalPlugin(
+        name: 'Notes',
+        url: '/projects/editor',
+        icon: Icons.edit_note_rounded,
+        description: 'Quick notes capturing.',
+        category: PluginCategory.productivity,
+      ),
+      _InternalPlugin(
+        name: 'GPS Tracker',
+        url: '/widgets/gps',
+        icon: Icons.location_on_rounded,
+        description: 'Live location tracking.',
+        category: PluginCategory.other,
+      ),
+      _InternalPlugin(
+        name: 'Settings',
+        url: '/settings',
+        icon: Icons.settings_rounded,
+        description: 'Customize application.',
         category: PluginCategory.other,
       ),
     ];

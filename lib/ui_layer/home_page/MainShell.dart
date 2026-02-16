@@ -48,6 +48,12 @@ class MainShell extends StatelessWidget {
       case '/health/exercise':
         pageIcon = HealthPage.icon(context, size: responsiveSize);
         break;
+      case '/health/steps':
+        pageIcon = HealthPage.icon(context, size: responsiveSize);
+        break;
+      case '/health/heart_rate':
+        pageIcon = HealthPage.icon(context, size: responsiveSize);
+        break;
       case '/health/sleep':
         pageIcon = HealthPage.icon(context, size: responsiveSize);
         break;

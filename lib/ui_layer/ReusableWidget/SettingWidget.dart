@@ -3,6 +3,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/BackWidget.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/ThemeManager.dart';
+import 'package:provider/provider.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 
 class SettingsWidget extends StatelessWidget {
   final String title;
@@ -120,13 +123,16 @@ class SettingsWidget extends StatelessWidget {
             context: context,
             settingTitle: 'Notifications',
             icon: Icons.notifications,
-            trailingWidget: Switch(
-              value: true, // Placeholder for actual notification state
-              onChanged: (bool value) {
-                // Action: Implement notification toggling logic
-                print('Notifications switched to: $value');
-              },
-            ),
+            trailingWidget: Watch((context) {
+              final notificationService = context
+                  .watch<LocalNotificationService>();
+              return Switch(
+                value: notificationService.notificationsEnabled.value,
+                onChanged: (bool value) {
+                  notificationService.setNotificationsEnabled(value);
+                },
+              );
+            }),
             onTap: null,
           ),
 
@@ -147,15 +153,7 @@ class SettingsWidget extends StatelessWidget {
             ),
           ),
 
-          _buildSettingTile(
-            context: context,
-            settingTitle: 'Help & FAQ',
-            icon: Icons.help_outline,
-            onTap: () {
-              // Action: Navigate to web view or support page
-              print('Navigate to Help');
-            },
-          ),
+         
           _buildSettingTile(
             context: context,
             settingTitle: 'Terms of Service',
@@ -168,7 +166,7 @@ class SettingsWidget extends StatelessWidget {
           _buildSettingTile(
             context: context,
             settingTitle: 'Version',
-            subtitle: '1.0.0 (Build 20251109)',
+            subtitle: '1.0.0',
             icon: Icons.info_outline,
             trailingWidget:
                 const SizedBox.shrink(), // No arrow for version info

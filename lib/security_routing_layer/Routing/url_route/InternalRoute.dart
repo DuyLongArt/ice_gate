@@ -13,6 +13,7 @@ import 'package:ice_shield/ui_layer/health_page/subpage/SleepPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodInputPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/WaterPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
+import 'package:ice_shield/ui_layer/projects_page/FocusPage.dart';
 import 'package:ice_shield/ui_layer/widget_page/PluginList/IOTTracker/GPSTrackingPage.dart';
 import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
 // // Import your pages
@@ -90,7 +91,7 @@ final GoRouter router = GoRouter(
               builder: (context, state) => const StepsPage(),
             ),
             GoRoute(
-              path: 'heart',
+              path: 'heart_rate',
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const HeartRatePage(),
             ),
@@ -114,7 +115,7 @@ final GoRouter router = GoRouter(
                   parentNavigatorKey: _shellNavigatorKey,
                   builder: (context, state) => const FoodDashboardPage(),
                 ),
-              ]
+              ],
             ),
             GoRoute(
               path: 'exercise',
@@ -125,6 +126,11 @@ final GoRouter router = GoRouter(
               path: 'water',
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const WaterPage(),
+            ),
+            GoRoute(
+              path: 'focus',
+              parentNavigatorKey: _shellNavigatorKey,
+              builder: (context, state) => const FocusPage(),
             ),
           ],
         ),
@@ -150,6 +156,11 @@ final GoRouter router = GoRouter(
               path: 'editor',
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const TextEditorPage(),
+            ),
+            GoRoute(
+              path: 'focus',
+              parentNavigatorKey: _shellNavigatorKey,
+              builder: (context, state) => const FocusPage(),
             ),
           ],
         ),

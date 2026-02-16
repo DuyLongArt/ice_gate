@@ -8,7 +8,12 @@ import '../../../data_layer/DataSources/local_database/Database.dart';
 // import '../../../data_layer/Protocol/Widget/InternalWidgetDragProtocol.dart';
 // import '../../../data_layer/Protocol/Widget/WidgetManagerBlock.dart';
 import '../../data_layer/Protocol/Canvas/InternalWidgetDragProtocol.dart';
+import '../../data_layer/Protocol/Home/InternalWidgetProtocol.dart';
 import 'package:ice_shield/orchestration_layer/Action/WidgetNavigator.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
+import 'package:signals_flutter/signals_flutter.dart';
+import 'package:go_router/go_router.dart';
 import '../../initial_layer/FireAPI/UrlNavigate.dart'; // Added for navigation
 import '../widget_page/AddPluginForm.dart';
 // import '../WidgetCard.dart'; // We will use BuildCard exclusively for the store to ensure consistent dragging size
@@ -74,14 +79,14 @@ class StoreWidget extends StatelessWidget {
         score: 20,
       ),
       InternalWidgetDragProtocol.item(
-        name: "Finance",
-        color: "0xFF2196F3",
-        url: '/finance',
+        name: "Youtube",
+        color: "0xFFEA4335",
+        url: 'https://youtube.com',
         imageUrl: '',
-        alias: 'finance',
+        alias: 'youtube',
         dateAdded: DateTime.now().toIso8601String(),
-        widgetID: 106,
-        score: 100,
+        widgetID: 105,
+        score: 20,
       ),
     ];
   }
@@ -101,96 +106,172 @@ class StoreWidget extends StatelessWidget {
     );
   }
 
+  InternalWidgetDragProtocol _internalToDragProtocol(
+    InternalWidgetProtocol data,
+  ) {
+    return InternalWidgetDragProtocol.item(
+      name: data.name,
+      color: _getColorHex(data.name),
+      url: data.url,
+      imageUrl: data.imageUrl ?? '',
+      alias: data.name.toLowerCase(),
+      dateAdded: DateTime.now().toIso8601String(),
+      widgetID: data.widgetID,
+      score: 5,
+    );
+  }
+
+  String _getColorHex(String name) {
+    final lower = name.toLowerCase();
+    if (lower.contains('health') || lower.contains('heart'))
+      return "0xFFE91E63";
+    if (lower.contains('finance') || lower.contains('money'))
+      return "0xFF4CAF50";
+    if (lower.contains('social') || lower.contains('chat')) return "0xFF2196F3";
+    if (lower.contains('calendar') || lower.contains('date'))
+      return "0xFFFF9800";
+    if (lower.contains('weather')) return "0xFFFFC107";
+    if (lower.contains('ui') || lower.contains('design')) return "0xFF9C27B0";
+    return "0xFF607D8B";
+  }
+
   @override
   Widget build(BuildContext context) {
     final dao = context.read<ExternalWidgetsDAO>();
+    final internalBlock = context.read<InternalWidgetBlock>();
+    final externalBlock = context.read<ExternalWidgetBlock>();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
-      child: Container(
-        height: 125,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 25,
-              offset: const Offset(0, 10),
+    return Watch((context) {
+      //add internal widget frm DATABASE
+      final internalWidgets = internalBlock.listInternalWidgetHomePage.value;
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+        child: Container(
+          height: 125,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.12),
+              width: 1.5,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(40),
-          child: StreamBuilder<List<ExternalWidgetData>>(
-            stream: dao.watchAllWidgets(),
-            builder: (context, snapshot) {
-              final List<InternalWidgetDragProtocol> combinedList =
-                  _getDefaultItems();
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 25,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(40),
+            child: StreamBuilder<List<ExternalWidgetData>>(
+              stream: dao.watchAllWidgets(),
+              builder: (context, snapshot) {
+                final List<InternalWidgetDragProtocol> combinedList =
+                    _getDefaultItems();
 
-              if (snapshot.hasData && snapshot.data != null) {
-                final externalItems = snapshot.data!
-                    .map((data) => _protocolToDragProtocol(data))
-                    .toList();
-                combinedList.addAll(externalItems);
-              }
+                // Add Internal Widgets
+                combinedList.addAll(
+                  internalWidgets.map((w) => _internalToDragProtocol(w)),
+                );
 
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 20,
-                ),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: combinedList.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(width: 20),
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return _buildAddButton(context);
-                  }
+                if (snapshot.hasData && snapshot.data != null) {
+                  final externalItems = snapshot.data!
+                      .map((data) => _protocolToDragProtocol(data))
+                      .toList();
+                  combinedList.addAll(externalItems);
+                }
 
-                  final item = combinedList[index - 1];
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: combinedList.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 20),
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return _buildAddButton(context);
+                    }
 
-                  return Draggable<InternalWidgetDragProtocol>(
-                    data: item,
-                    onDragStarted: () => HapticFeedback.lightImpact(),
-                    feedback: Material(
-                      color: Colors.transparent,
-                      child: Transform.scale(
-                        scale: 1.15,
+                    final item = combinedList[index - 1];
+
+                    return LongPressDraggable<InternalWidgetDragProtocol>(
+                      delay: const Duration(milliseconds: 300),
+                      hapticFeedbackOnStart: true,
+                      data: item,
+                      onDragStarted: () => HapticFeedback.heavyImpact(),
+                      feedback: Material(
+                        color: Colors.transparent,
+                        child: Transform.scale(
+                          scale: 1.15,
+                          child: BuildCard(
+                            item: item,
+                            isDragging: true,
+                            cardWidth: 85,
+                            cardHeight: 85,
+                            name: item.name,
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: 0.1,
                         child: BuildCard(
                           item: item,
-                          isDragging: true,
                           cardWidth: 85,
                           cardHeight: 85,
                           name: item.name,
                         ),
                       ),
-                    ),
-                    childWhenDragging: Opacity(
-                      opacity: 0.1,
-                      child: BuildCard(
-                        item: item,
-                        cardWidth: 85,
-                        cardHeight: 85,
-                        name: item.name,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          BuildCard(
+                            item: item,
+                            cardWidth: 85,
+                            cardHeight: 85,
+                            name: item.name,
+                          ),
+                          if (item.alias == 'plugin')
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: InkWell(
+                                onTap: () {
+                                  externalBlock.deleteWidget(
+                                    dao,
+                                    item.widgetID,
+                                  );
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                    child: BuildCard(
-                      item: item,
-                      cardWidth: 85,
-                      cardHeight: 85,
-                      name: item.name,
-                    ),
-                  );
-                },
-              );
-            },
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildAddButton(BuildContext context) {
@@ -273,7 +354,9 @@ class BuildCard extends StatelessWidget {
         child: InkWell(
           onTap: () {
             if (item.url.isNotEmpty) {
-              if (item.alias.contains("plugin")) {
+              if (item.url.startsWith('/')) {
+                context.push(item.url);
+              } else if (item.alias.contains("plugin")) {
                 WidgetNavigatorAction.navigateExternalUrl(context, item.url);
               } else {
                 urlNavigate(item.url);
@@ -313,7 +396,11 @@ class BuildCard extends StatelessWidget {
                 if (item.alias == 'finance')
                   _buildFinanceContent()
                 else if (isIconOnly)
-                  Icon(_getIcon(item.alias), color: Colors.white, size: 28)
+                  Icon(
+                    _getIcon(item.alias, item.name),
+                    color: Colors.white,
+                    size: 28,
+                  )
                 else
                   _buildFavicon(),
                 const SizedBox(height: 8),
@@ -337,7 +424,7 @@ class BuildCard extends StatelessWidget {
     );
   }
 
-  IconData _getIcon(String alias) {
+  IconData _getIcon(String alias, String name) {
     switch (alias.toLowerCase()) {
       case 'facebook':
         return Icons.facebook_rounded;
@@ -350,7 +437,7 @@ class BuildCard extends StatelessWidget {
       case 'mail':
         return Icons.alternate_email_rounded;
       default:
-        return Icons.link_rounded;
+        return InternalWidgetProtocol.getIconFromName(name);
     }
   }
 

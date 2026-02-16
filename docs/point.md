@@ -3,12 +3,12 @@
 ## Level Requirements
 | Level | Points Required |
 |-------|----------------|
+| LV 0  | 0 - 99 points  |
 | LV 1  | 100 points     |
-| LV 2  | 200 points     |
-| LV 3  | 300 points     |
-| LV 4  | 400 points     |
-| LV 5  | 500 points     |
-| LV 6  | 600 points     |
+| LV 2  | 100+200 points     |
+| LV 3  | 100+200+300 points     |
+| LV 4  | 100+200+300+400 points     |
+| LV 5  | 100+200+300+400+500 points     |
 | ...   | LV × 100       |
 
 ## How to Earn Points
@@ -23,7 +23,9 @@
 - **Each contact = +30 points**
 - **Every 5 affection = +10 points**
 
-### 💰 Finance - TBD
+### 💰 Finance - Wealth
+- **Every $1000 in savings = +50 points**
+- **Every 5% investment return = +10 points**
 
 ### 💼 Projects - TBD
 

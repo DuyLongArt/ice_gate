@@ -149,7 +149,7 @@ class InternalWidgetProtocol implements PluginProtocol {
       widgetID: data.widgetID,
       // Use defaults for new fields when adapting from database
       description: '',
-      icon: Icons.widgets,
+      icon: getIconFromName(data.name ?? ''),
       protocol: 'https',
       host: '',
       category: PluginCategory.other,
@@ -157,5 +157,59 @@ class InternalWidgetProtocol implements PluginProtocol {
       isActive: false,
       requiresAuth: false,
     );
+  }
+
+  static IconData getIconFromName(String name) {
+    final lower = name.toLowerCase();
+
+    // Strict matching for 'UI'
+    if (lower == 'ui' ||
+        lower.contains(' ui ') ||
+        lower.startsWith('ui ') ||
+        lower.endsWith(' ui') ||
+        lower.contains('user interface') ||
+        lower.contains('design'))
+      return Icons.design_services;
+
+    if (lower.contains('health') ||
+        lower.contains('heart') ||
+        lower.contains('fit'))
+      return Icons.favorite;
+    if (lower.contains('finance') ||
+        lower.contains('money') ||
+        lower.contains('wallet') ||
+        lower.contains('bank'))
+      return Icons.account_balance_wallet;
+    if (lower.contains('social') ||
+        lower.contains('chat') ||
+        lower.contains('friend'))
+      return Icons.people;
+    if (lower.contains('calendar') ||
+        lower.contains('schedule') ||
+        lower.contains('date'))
+      return Icons.calendar_month;
+    if (lower.contains('map') ||
+        lower.contains('gps') ||
+        lower.contains('location'))
+      return Icons.map;
+    if (lower.contains('music') ||
+        lower.contains('song') ||
+        lower.contains('audio'))
+      return Icons.music_note;
+    if (lower.contains('weather') ||
+        lower.contains('forecast') ||
+        lower.contains('sun'))
+      return Icons.wb_sunny;
+    if (lower.contains('widget') || lower.contains('component'))
+      return Icons.widgets;
+    if (lower.contains('setting') || lower.contains('config'))
+      return Icons.settings;
+    if (lower.contains('news') || lower.contains('article'))
+      return Icons.newspaper;
+    if (lower.contains('shop') || lower.contains('cart'))
+      return Icons.shopping_cart;
+    if (lower.contains('video') || lower.contains('movie')) return Icons.movie;
+
+    return Icons.dashboard_customize; // Default fallback
   }
 }

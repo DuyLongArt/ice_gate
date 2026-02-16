@@ -76,35 +76,68 @@ class JsonThemeAdapter {
       colorScheme = ColorScheme.fromSeed(
         seedColor: seedColor,
         brightness: brightness,
-        // You can still override specific colors if they are provided in color_scheme
-        primary: colorsJson.containsKey('primary')
+        // Override specific colors if they are provided in color_scheme
+        primary: colorsJson['primary'] != null
             ? _parseColor(colorsJson['primary'])
             : null,
-        onPrimary: colorsJson.containsKey('onPrimary')
+        onPrimary: colorsJson['onPrimary'] != null
             ? _parseColor(colorsJson['onPrimary'])
             : null,
-        secondary: colorsJson.containsKey('secondary')
+        primaryContainer: colorsJson['primaryContainer'] != null
+            ? _parseColor(colorsJson['primaryContainer'])
+            : null,
+        onPrimaryContainer: colorsJson['onPrimaryContainer'] != null
+            ? _parseColor(colorsJson['onPrimaryContainer'])
+            : null,
+        secondary: colorsJson['secondary'] != null
             ? _parseColor(colorsJson['secondary'])
             : null,
-        onSecondary: colorsJson.containsKey('onSecondary')
+        onSecondary: colorsJson['onSecondary'] != null
             ? _parseColor(colorsJson['onSecondary'])
             : null,
-        tertiary: colorsJson.containsKey('tertiary')
+        secondaryContainer: colorsJson['secondaryContainer'] != null
+            ? _parseColor(colorsJson['secondaryContainer'])
+            : null,
+        onSecondaryContainer: colorsJson['onSecondaryContainer'] != null
+            ? _parseColor(colorsJson['onSecondaryContainer'])
+            : null,
+        tertiary: colorsJson['tertiary'] != null
             ? _parseColor(colorsJson['tertiary'])
             : null,
-        onTertiary: colorsJson.containsKey('onTertiary')
+        onTertiary: colorsJson['onTertiary'] != null
             ? _parseColor(colorsJson['onTertiary'])
             : null,
-        surface: colorsJson.containsKey('surface')
+        tertiaryContainer: colorsJson['tertiaryContainer'] != null
+            ? _parseColor(colorsJson['tertiaryContainer'])
+            : null,
+        onTertiaryContainer: colorsJson['onTertiaryContainer'] != null
+            ? _parseColor(colorsJson['onTertiaryContainer'])
+            : null,
+        surface: colorsJson['surface'] != null
             ? _parseColor(colorsJson['surface'])
             : null,
-        onSurface: colorsJson.containsKey('onSurface')
+        onSurface: colorsJson['onSurface'] != null
             ? _parseColor(colorsJson['onSurface'])
             : null,
-        error: colorsJson.containsKey('error')
+        surfaceContainer: colorsJson['surfaceContainer'] != null
+            ? _parseColor(colorsJson['surfaceContainer'])
+            : null,
+        surfaceContainerHigh: colorsJson['surfaceContainerHigh'] != null
+            ? _parseColor(colorsJson['surfaceContainerHigh'])
+            : null,
+        surfaceContainerLow: colorsJson['surfaceContainerLow'] != null
+            ? _parseColor(colorsJson['surfaceContainerLow'])
+            : null,
+        outline: colorsJson['outline'] != null
+            ? _parseColor(colorsJson['outline'])
+            : null,
+        outlineVariant: colorsJson['outlineVariant'] != null
+            ? _parseColor(colorsJson['outlineVariant'])
+            : null,
+        error: colorsJson['error'] != null
             ? _parseColor(colorsJson['error'])
             : null,
-        onError: colorsJson.containsKey('onError')
+        onError: colorsJson['onError'] != null
             ? _parseColor(colorsJson['onError'])
             : null,
       );
@@ -114,16 +147,43 @@ class JsonThemeAdapter {
         brightness: brightness,
         primary: _parseColor(colorsJson['primary'] ?? '0xFF000000'),
         onPrimary: _parseColor(colorsJson['onPrimary'] ?? '0xFFFFFFFF'),
+        primaryContainer: colorsJson['primaryContainer'] != null
+            ? _parseColor(colorsJson['primaryContainer'])
+            : null,
+        onPrimaryContainer: colorsJson['onPrimaryContainer'] != null
+            ? _parseColor(colorsJson['onPrimaryContainer'])
+            : null,
         secondary: _parseColor(colorsJson['secondary'] ?? '0xFF000000'),
         onSecondary: _parseColor(colorsJson['onSecondary'] ?? '0xFFFFFFFF'),
-        tertiary: colorsJson.containsKey('tertiary')
+        secondaryContainer: colorsJson['secondaryContainer'] != null
+            ? _parseColor(colorsJson['secondaryContainer'])
+            : null,
+        onSecondaryContainer: colorsJson['onSecondaryContainer'] != null
+            ? _parseColor(colorsJson['onSecondaryContainer'])
+            : null,
+        tertiary: colorsJson['tertiary'] != null
             ? _parseColor(colorsJson['tertiary'])
             : null,
-        onTertiary: colorsJson.containsKey('onTertiary')
+        onTertiary: colorsJson['onTertiary'] != null
             ? _parseColor(colorsJson['onTertiary'])
+            : null,
+        tertiaryContainer: colorsJson['tertiaryContainer'] != null
+            ? _parseColor(colorsJson['tertiaryContainer'])
+            : null,
+        onTertiaryContainer: colorsJson['onTertiaryContainer'] != null
+            ? _parseColor(colorsJson['onTertiaryContainer'])
             : null,
         surface: _parseColor(colorsJson['surface'] ?? '0xFFFFFFFF'),
         onSurface: _parseColor(colorsJson['onSurface'] ?? '0xFF000000'),
+        surfaceContainer: colorsJson['surfaceContainer'] != null
+            ? _parseColor(colorsJson['surfaceContainer'])
+            : null,
+        outline: colorsJson['outline'] != null
+            ? _parseColor(colorsJson['outline'])
+            : null,
+        outlineVariant: colorsJson['outlineVariant'] != null
+            ? _parseColor(colorsJson['outlineVariant'])
+            : null,
         error: _parseColor(colorsJson['error'] ?? '0xFFB00020'),
         onError: _parseColor(colorsJson['onError'] ?? '0xFFFFFFFF'),
       );

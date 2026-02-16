@@ -7,10 +7,10 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.
 import 'package:provider/provider.dart';
 import 'package:flutter/widgets.dart'; // For BuildContext
 
-import 'package:ice_shield/initial_layer/DuyLongServices/PowerPoint/ProjectPoint.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/ProjectPoint.dart';
 
 class ProjectBlock {
-  final projects = listSignal<ProjectProtocol>([]);
+  final projects = signal<List<ProjectProtocol>>([]);
   final selectedProject = signal<ProjectProtocol?>(null);
 
   StreamSubscription? _projectsSubscription;
@@ -22,22 +22,32 @@ class ProjectBlock {
     _personId = personId;
 
     _projectsSubscription?.cancel();
-    _projectsSubscription = dao.watchAllProjects(personId).listen((data) {
-      projects.value = data
-          .map(
-            (e) => ProjectProtocol(
-              projectID: e.projectID,
-              personID: e.personID,
-              name: e.name,
-              description: e.description,
-              color: e.color,
-              createdAt: e.createdAt,
-              updatedAt: e.updatedAt,
-              status: e.status,
-            ),
-          )
-          .toList();
-    });
+    _projectsSubscription = dao
+        .watchAllProjects(personId)
+        .listen(
+          (data) {
+            debugPrint(
+              "ProjectBlock: Watch projects updated with ${data.length} items",
+            );
+            projects.value = data
+                .map(
+                  (e) => ProjectProtocol(
+                    projectID: e.projectID,
+                    personID: e.personID,
+                    name: e.name,
+                    description: e.description,
+                    color: e.color,
+                    createdAt: e.createdAt,
+                    updatedAt: e.updatedAt,
+                    status: e.status,
+                  ),
+                )
+                .toList();
+          },
+          onError: (e) {
+            debugPrint("ProjectBlock: Error watching projects: $e");
+          },
+        );
   }
 
   Future<int> createProject(

@@ -6,24 +6,27 @@
     "color_scheme": {
         "primary": "0xFFF3E600",
         "onPrimary": "0xFF000000",
+        "primaryContainer": "0xFF4D4D00",
+        "onPrimaryContainer": "0xFFF3E600",
         "secondary": "0xFF00FF9F",
         "onSecondary": "0xFF000000",
         "tertiary": "0xFFFE00FE",
         "surface": "0xFF0D0D0D",
         "onSurface": "0xFFFFFFFF",
-        "background": "0xFF050505",
-        "onBackground": "0xFFFFFFFF"
+        "surfaceContainer": "0xFF1A1A1A",
+        "outline": "0xFF333333",
+        "outlineVariant": "0xFFF3E600"
     },
     "components": {
         "appBar": {
             "backgroundColor": "0xFF0D0D0D",
-            "foregroundColor": "0xFFFFFFFF",
+            "foregroundColor": "0xFFF3E600",
             "elevation": 0.0
         },
         "elevatedButton": {
             "backgroundColor": "0xFFF3E600",
             "foregroundColor": "0xFF000000",
-            "borderRadius": 0.0,
+            "borderRadius": 4.0,
             "elevation": 8.0
         },
         "card": {

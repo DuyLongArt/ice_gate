@@ -6,7 +6,7 @@ import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/Health/AIFoodCaloriesServices.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/Health/AIFoodCaloriesServices.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_core.dart';

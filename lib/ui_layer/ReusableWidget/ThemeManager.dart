@@ -83,6 +83,26 @@ class ThemeManager {
                           ),
                           _buildThemeOption(
                             context,
+                            'Sakura Zen 🌸',
+                            'assets/SakuraZen.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Emerald Forest 🌲',
+                            'assets/EmeraldForest.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Nordic Night ❄️',
+                            'assets/NordicNight.json',
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Royal Velvet 👑',
+                            'assets/RoyalVelvet.json',
+                          ),
+                          _buildThemeOption(
+                            context,
                             'Midnight Gold',
                             'assets/MidnightGold.json',
                           ),

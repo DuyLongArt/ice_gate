@@ -6,6 +6,7 @@ import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:provider/provider.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:ui';
 import 'InternalDragIconWidget.dart'; // The Grid Cell
 import 'StoreWidget.dart'; // The Bottom Bar
 
@@ -107,49 +108,73 @@ class _DragCanvasState extends State<DragCanvas> {
       children: [
         const SizedBox(height: 12),
         Center(
-          child: Container(
-            width: 140,
-            height: 38,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    } else {
-                      context.go('/');
-                    }
-                  },
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 20,
+          child: Watch((context) {
+            final isStoreOpen = DragCanvasGrid.isOpenStore.value;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.elasticOut,
+              width: isStoreOpen ? 230 : 180,
+              height: 38,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const AutoSizeText(
-                  "CANVAS",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        context.go('/');
+                      }
+                    },
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
+                  Expanded(
+                    child: Center(
+                      child: AutoSizeText(
+                        isStoreOpen ? "WIDGET STORE" : "CANVAS",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: DragCanvasGrid.toggleStore,
+                    child: AnimatedRotation(
+                      turns: isStoreOpen
+                          ? 0.125
+                          : 0, // Rotate 45 deg (plus to x)
+                      duration: const Duration(milliseconds: 300),
+                      child: const Icon(
+                        Icons.add_circle_outline_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ),
         const SizedBox(height: 10),
 
@@ -157,44 +182,64 @@ class _DragCanvasState extends State<DragCanvas> {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
             decoration: BoxDecoration(
-              color: widget.baseColor.withOpacity(0.3),
+              color: widget.baseColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(35),
               border: Border.all(
-                color: Theme.of(context).dividerColor.withOpacity(0.03),
+                color: Theme.of(context).dividerColor.withOpacity(0.1),
               ),
             ),
-            child: Watch((context) {
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                physics: const BouncingScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1.0,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: widgetBlock.widgets.length,
-                itemBuilder: (context, index) {
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      return InternalDragIconWidget(
-                        index: index,
-                        store: widgetBlock,
-                        widthCard: constraints.maxWidth,
-                        heightCard: constraints.maxHeight,
-                        name: widgetBlock.widgets[index].name,
-                      );
-                    },
-                  );
-                },
-              );
-            }),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(35),
+              child: Stack(
+                children: [
+                  BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                    child: Container(color: Colors.transparent),
+                  ),
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: DotGridPainter(
+                        color: widget.isDark ? Colors.white : Colors.black,
+                        opacity: 0.1,
+                        spacing: 25,
+                      ),
+                    ),
+                  ),
+                  Watch((context) {
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 1.0,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
+                      itemCount: widgetBlock.widgets.length,
+                      itemBuilder: (context, index) {
+                        return LayoutBuilder(
+                          builder: (context, constraints) {
+                            return InternalDragIconWidget(
+                              index: index,
+                              store: widgetBlock,
+                              widthCard: constraints.maxWidth,
+                              heightCard: constraints.maxHeight,
+                              name: widgetBlock.widgets[index].name,
+                            );
+                          },
+                        );
+                      },
+                    );
+                  }),
+                ],
+              ),
+            ),
           ),
         ),
 
         const SizedBox(height: 16),
 
-        
         Watch((context) {
           final isStoreOpen = DragCanvasGrid.isOpenStore.value;
           return AnimatedSwitcher(
@@ -215,5 +260,31 @@ class _DragCanvasState extends State<DragCanvas> {
         }),
       ],
     );
+  }
+}
+
+class DotGridPainter extends CustomPainter {
+  final Color color;
+  final double spacing;
+  final double opacity;
+
+  DotGridPainter({required this.color, this.spacing = 20, this.opacity = 0.1});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withOpacity(opacity)
+      ..strokeWidth = 2;
+
+    for (double x = spacing / 2; x < size.width; x += spacing) {
+      for (double y = spacing / 2; y < size.height; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.5, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DotGridPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.opacity != opacity;
   }
 }

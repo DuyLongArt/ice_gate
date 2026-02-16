@@ -36,9 +36,14 @@ class HealthPage extends StatefulWidget {
           onPressed: () => context.go('/health/exercise'),
         ),
         SubButton(
-          icon: Icons.bedtime,
+          icon: Icons.timer,
           backgroundColor: Colors.indigo,
-          onPressed: () => context.go('/health/sleep'),
+          onPressed: () => context.go('/health/focus'),
+        ),
+        SubButton(
+          icon: Icons.favorite,
+          backgroundColor: Colors.pink,
+          onPressed: () => context.go('/health/heart_rate'),
         ),
         SubButton(
           icon: Icons.water_drop,
@@ -55,7 +60,7 @@ class HealthPage extends StatefulWidget {
   State<HealthPage> createState() => _HealthPageState();
 }
 
-class _HealthPageState extends State<HealthPage> {
+class _HealthPageState extends State<HealthPage> with WidgetsBindingObserver {
   late AppDatabase database;
   Map<String, HealthMetric> _healthMetrics = {};
   bool _isLoading = false;
@@ -65,7 +70,21 @@ class _HealthPageState extends State<HealthPage> {
   void initState() {
     super.initState();
     database = context.read<AppDatabase>();
+    WidgetsBinding.instance.addObserver(this);
     _loadHealthData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadHealthData();
+    }
   }
 
   Future<void> _loadHealthData() async {
@@ -135,64 +154,11 @@ class _HealthPageState extends State<HealthPage> {
                 ),
               ),
 
-              // Daily Summary Card or Motivation
+              // Daily Summary Card
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          colorScheme.primary,
-                          colorScheme.primary.withValues(alpha: 0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.auto_awesome,
-                              color: colorScheme.onPrimary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'DAILY MOTIVATION',
-                              style: textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onPrimary.withValues(
-                                  alpha: 0.8,
-                                ),
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Keep moving! You\'re doing great today.',
-                          style: textTheme.titleMedium?.copyWith(
-                            color: colorScheme.onPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _buildDailySummaryCard(colorScheme, textTheme),
                 ),
               ),
 
@@ -243,6 +209,118 @@ class _HealthPageState extends State<HealthPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDailySummaryCard(ColorScheme colorScheme, TextTheme textTheme) {
+    // Count completed goals
+    int completed = 0;
+    int total = 0;
+    for (var metric in _healthMetrics.values) {
+      if (metric.progress != null) {
+        total++;
+        if (metric.progress! >= 1.0) {
+          completed++;
+        }
+      }
+    }
+
+    String motivationText;
+    IconData motivationIcon;
+    if (total == 0 || _isLoading) {
+      motivationText = 'Keep moving! You\'re doing great today.';
+      motivationIcon = Icons.auto_awesome;
+    } else if (completed == total) {
+      motivationText = 'All $total goals completed! You\'re on fire! 🔥';
+      motivationIcon = Icons.emoji_events_rounded;
+    } else if (completed > 0) {
+      motivationText = '$completed of $total goals done. Keep pushing! 💪';
+      motivationIcon = Icons.trending_up_rounded;
+    } else {
+      motivationText = 'Start tracking your health goals for today!';
+      motivationIcon = Icons.flag_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withValues(alpha: 0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(motivationIcon, color: colorScheme.onPrimary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'DAILY SUMMARY',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
+              const Spacer(),
+              if (total > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.onPrimary.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '$completed/$total',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            motivationText,
+            style: textTheme.titleMedium?.copyWith(
+              color: colorScheme.onPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (total > 0) ...[
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: total > 0 ? completed / total : 0,
+                minHeight: 6,
+                backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

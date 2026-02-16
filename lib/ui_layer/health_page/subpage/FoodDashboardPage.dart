@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/Health/AIFoodCaloriesServices.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/Health/AIFoodCaloriesServices.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -192,6 +192,7 @@ class _MealDialogContentState extends State<_MealDialogContent> {
                           title: const Text('Camera'),
                           onTap: () {
                             _pickImage(ImageSource.camera);
+                            
                             Navigator.pop(bottomSheetContext);
                           },
                         ),
@@ -331,12 +332,12 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                 pinned: true,
                 elevation: 0,
                 backgroundColor: colorScheme.surface,
-                title: const Text(
+                title: Text(
                   'Nutrition',
-                  style: TextStyle(fontWeight: FontWeight.w900),
+                  style: TextStyle(fontWeight: FontWeight.w900,color: colorScheme.onSurface),
                 ),
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+                  icon: Icon(Icons.arrow_back_ios_new, size: 20,color: colorScheme.onSurface),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

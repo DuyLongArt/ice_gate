@@ -1,3 +1,5 @@
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
+
 /// ProjectPoint — Configurable point system for projects & tasks.
 ///
 /// All point values are defined as static constants at the top
@@ -8,12 +10,12 @@ class ProjectPoint {
   // ─────────────────────────────────────────────────
 
   // Task Points
-  static const double taskBase = 2.0;
+  static const double taskBase = TASK_SCORE_INCREMENT;
   static const double taskHalfwayBonus = 1.0; // > 50% tasks done
   static const double taskAllDoneBonus = 3.0; // 100% tasks done
 
   // Project Points
-  static const double projectBase = 50.0;
+  static const double projectBase = PROJECT_SCORE_INCREMENT;
   static const double projectManyTasksBonus = 2.0; // >= 5 tasks
   static const double projectLotsTasksBonus = 3.0; // >= 10 tasks
   static const double projectDocBonus = 2.0; // >= 3 notes

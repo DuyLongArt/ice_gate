@@ -1,6 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:drift/drift.dart' as drift;
 import 'package:pedometer/pedometer.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
 
 class StepsPage extends StatefulWidget {
@@ -13,7 +16,6 @@ class StepsPage extends StatefulWidget {
 class _StepsPageState extends State<StepsPage> {
   int currentSteps = 0;
   final int dailyGoal = 10000;
-  final TextEditingController _stepsController = TextEditingController();
 
   late Stream<StepCount> _stepCountStream;
   late Stream<PedestrianStatus> _pedestrianStatusStream;
@@ -30,7 +32,6 @@ class _StepsPageState extends State<StepsPage> {
 
   @override
   void dispose() {
-    _stepsController.dispose();
     super.dispose();
   }
 
@@ -38,6 +39,7 @@ class _StepsPageState extends State<StepsPage> {
     setState(() {
       currentSteps = event.steps;
     });
+    _saveSteps(event.steps);
   }
 
   void onPedestrianStatusUpdate(PedestrianStatus event) {
@@ -63,16 +65,61 @@ class _StepsPageState extends State<StepsPage> {
   @override
   void initState() {
     super.initState();
+    _loadData();
     initPlatformState();
 
     // Fetch steps from Apple Health
     HealthService.fetchStepCount().then((steps) {
-      if (mounted) {
+      if (mounted && steps > currentSteps) {
         setState(() {
           currentSteps = steps;
         });
+        _saveSteps(steps);
       }
     });
+  }
+
+  Future<void> _loadData() async {
+    final dao = context.read<HealthMetricsDAO>();
+    final today = DateTime.now();
+    final data = await dao.getMetricsForDate(1, today);
+    if (mounted && data != null && data.steps > currentSteps) {
+      setState(() {
+        currentSteps = data.steps;
+      });
+    }
+  }
+
+  Future<void> _saveSteps(int steps) async {
+    try {
+      final dao = context.read<HealthMetricsDAO>();
+      final today = DateTime.now();
+      final currentMetrics = await dao.getMetricsForDate(1, today);
+
+      if (currentMetrics != null) {
+        if (steps > currentMetrics.steps) {
+          await dao.insertOrUpdateMetrics(
+            currentMetrics
+                .toCompanion(true)
+                .copyWith(
+                  steps: drift.Value(steps),
+                  updatedAt: drift.Value(DateTime.now()),
+                ),
+          );
+        }
+      } else {
+        await dao.insertOrUpdateMetrics(
+          HealthMetricsTableCompanion.insert(
+            personID: 1,
+            date: today,
+            steps: drift.Value(steps),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving steps: $e');
+    }
   }
 
   @override

@@ -1,5 +1,5 @@
-import 'package:ice_shield/initial_layer/DuyLongServices/CustomAuthService.dart';
-import 'package:ice_shield/initial_layer/DuyLongServices/PasskeyAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/CustomAuthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PasskeyAuthService.dart';
 import 'package:logging/logging.dart';
 
 class LoginAction {
