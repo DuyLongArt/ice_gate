@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:signals/signals_flutter.dart';
 // For ImageFilter
@@ -41,24 +40,20 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
-  late final TextEditingController _addressController;
   late final TextEditingController _cityController;
   late final TextEditingController _countryController;
-  late final TextEditingController _postalCodeController;
   late final TextEditingController _bioController;
   late final TextEditingController _occupationController;
   late final TextEditingController _companyController;
   late final TextEditingController _websiteController;
-  late final TextEditingController _usernameController;
-  late final TextEditingController _genderController;
+  late final TextEditingController _aliasController;
   late final TextEditingController _githubController;
   late final TextEditingController _linkedinController;
   late final TextEditingController _universityController;
   late final TextEditingController _educationController;
-  DateTime? _selectedBirthday;
+
   bool _isEditing = false;
   bool _isSaving = false;
-  final bool _isCreate = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   // late PersonManagementDAO personManagementDAO; // Unused
@@ -81,16 +76,13 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     _nameController = TextEditingController();
     _emailController = TextEditingController();
     _phoneController = TextEditingController();
-    _addressController = TextEditingController();
     _cityController = TextEditingController();
     _countryController = TextEditingController();
-    _postalCodeController = TextEditingController();
     _bioController = TextEditingController();
     _occupationController = TextEditingController();
     _companyController = TextEditingController();
     _websiteController = TextEditingController();
-    _usernameController = TextEditingController();
-    _genderController = TextEditingController();
+    _aliasController = TextEditingController();
     _githubController = TextEditingController();
     _linkedinController = TextEditingController();
     _universityController = TextEditingController();
@@ -111,13 +103,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
   // Helper to sync controllers with current state (call in build or listener)
   void _syncControllersWithState(UserInformation info) {
     // Sync if not editing to ensure latest data is shown
-    // We check for changes to avoid unnecessary rebuilds/cursor resets if called frequently,
-    // though here it is guarded by !_isEditing in build()
     _nameController.text =
         "${info.profiles.firstName} ${info.profiles.lastName}";
-    _emailController.text = info
-        .profiles
-        .profileImageUrl; // Using as placeholder if needed? or empty
     _bioController.text = info.details.bio;
     _occupationController.text = info.details.occupation;
     _websiteController.text = info.details.websiteUrl;
@@ -128,7 +115,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     _linkedinController.text = info.details.linkedinUrl;
     _universityController.text = info.details.university;
     _educationController.text = info.details.educationLevel;
-    _usernameController.text = info.profiles.firstName;
+    _aliasController.text = info.profiles.alias;
   }
 
   @override
@@ -136,10 +123,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _addressController.dispose();
     _cityController.dispose();
     _countryController.dispose();
-    _postalCodeController.dispose();
     _bioController.dispose();
     _occupationController.dispose();
     _companyController.dispose();
@@ -149,31 +134,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     _universityController.dispose();
     _educationController.dispose();
     _animationController.dispose();
-    _genderController.dispose();
-    _usernameController.dispose();
+    _aliasController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectBirthday() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedBirthday ?? DateTime(2000),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return Theme(
-          data: Theme.of(context).copyWith(colorScheme: colorScheme),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && picked != _selectedBirthday) {
-      setState(() {
-        _selectedBirthday = picked;
-      });
-    }
   }
 
   Future<void> _saveChanges(bool isCreate) async {
@@ -249,7 +211,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
       });
       // ... error handling
     }
-  }  
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -277,333 +239,260 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     // ... rest of build method
 
     return Scaffold(
-      extendBodyBehindAppBar: false,
+      backgroundColor: colorScheme.surface,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
-          'Personal Information',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          'Profile Details',
+          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
         ),
         centerTitle: true,
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        elevation: 1,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.white,
         actions: [
-          if (_isCreate)
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _isSaving ? null : () => _saveChanges(true),
-              tooltip: 'Create',
-            )
-          else if (!_isEditing)
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () {
-                setState(() {
-                  _isEditing = true;
-                });
-              },
-              tooltip: 'Edit',
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.save),
-              onPressed: _isSaving ? null : () => _saveChanges(false),
-              tooltip: 'Save',
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: Colors.black12,
+              shape: BoxShape.circle,
             ),
+            child: _isEditing
+                ? IconButton(
+                    icon: const Icon(Icons.check_rounded, color: Colors.white),
+                    onPressed: _isSaving ? null : () => _saveChanges(false),
+                    tooltip: 'Save',
+                  )
+                : IconButton(
+                    icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _isEditing = true;
+                      });
+                    },
+                    tooltip: 'Edit',
+                  ),
+          ),
         ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Profile Header Card
-                _buildProfileHeader(
+                // Premium High-Tech Header
+                _buildModernHeader(
+                  context,
                   colorScheme,
                   textTheme,
-                  _usernameController,
+                  _aliasController,
                   objectResource,
                   info,
                 ),
 
-                const SizedBox(height: 24),
-
-                // Skills Section
-                _buildSectionCard(
-                  title: 'Skills',
-                  icon: Icons.bolt,
-                  children: [
-                    Watch((context) {
-                      final skillList = personBlock.skills.value;
-                      if (skillList.isEmpty) {
-                        return Center(
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      // Bio Summary (Quick View)
+                      if (!_isEditing && info.details.bio.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 24),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer.withOpacity(
+                              0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: colorScheme.primary.withOpacity(0.1),
+                            ),
+                          ),
                           child: Text(
-                            'No skills added yet',
-                            style: TextStyle(
+                            info.details.bio,
+                            textAlign: TextAlign.center,
+                            style: textTheme.bodyLarge?.copyWith(
+                              fontStyle: FontStyle.italic,
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        );
-                      }
-                      return Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: skillList.map((skill) {
-                          return Chip(
-                            label: Text(
-                              skill.name,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            backgroundColor: colorScheme.secondaryContainer,
-                            side: BorderSide.none,
-                            avatar: Icon(
-                              Icons.star,
-                              size: 14,
-                              color: colorScheme.primary,
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    }),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Basic Information Section
-                _buildSectionCard(
-                  title: 'Basic Information',
-                  icon: Icons.person,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _nameController,
-                      label: 'Full Name',
-                      icon: Icons.person_outline,
-                      enabled: _isEditing,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _emailController,
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                      enabled: _isEditing,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _phoneController,
-                      label: 'Phone Number',
-                      icon: Icons.phone_outlined,
-                      enabled: _isEditing,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDateField(
-                      colorScheme: colorScheme,
-                      isEditing: _isEditing,
-                      selectedBirthday: _selectedBirthday,
-                      onTap: _isEditing ? _selectBirthday : null,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Professional Information Section
-                _buildSectionCard(
-                  title: 'Details',
-                  icon: Icons.work,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _occupationController,
-                      label: 'Occupation',
-                      icon: Icons.work_outline,
-                      enabled: _isEditing,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _companyController,
-                      label: 'Company',
-                      icon: Icons.business_outlined,
-                      enabled: _isEditing,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Education Information Section
-                _buildSectionCard(
-                  title: 'Education',
-                  icon: Icons.school,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _universityController,
-                      label: 'University',
-                      icon: Icons.account_balance_outlined,
-                      enabled: _isEditing,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _educationController,
-                      label: 'Education Level',
-                      icon: Icons.history_edu_outlined,
-                      enabled: _isEditing,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Social Connect Section
-                _buildSectionCard(
-                  title: 'Social Connect',
-                  icon: Icons.share,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _githubController,
-                      label: 'GitHub URL',
-                      icon: Icons.code_outlined,
-                      enabled: _isEditing,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _linkedinController,
-                      label: 'LinkedIn URL',
-                      icon: Icons.link_outlined,
-                      enabled: _isEditing,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _websiteController,
-                      label: 'Website',
-                      icon: Icons.language_outlined,
-                      enabled: _isEditing,
-                      keyboardType: TextInputType.url,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Address Information Section
-                _buildSectionCard(
-                  title: 'Address Information',
-                  icon: Icons.location_on,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _addressController,
-                      label: 'Street Address',
-                      icon: Icons.home_outlined,
-                      enabled: _isEditing,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildTextField(
-                            databaseText: '',
-                            controller: _cityController,
-                            label: 'City',
-                            icon: Icons.location_city_outlined,
-                            enabled: _isEditing,
-                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildTextField(
-                            databaseText: '',
-                            controller: _postalCodeController,
-                            label: 'Postal Code',
-                            icon: Icons.markunread_mailbox_outlined,
-                            enabled: _isEditing,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _countryController,
-                      label: 'Country',
-                      icon: Icons.public_outlined,
-                      enabled: _isEditing,
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 24),
-
-                // Bio Section
-                _buildSectionCard(
-                  title: 'About',
-                  icon: Icons.info,
-                  children: [
-                    _buildTextField(
-                      databaseText: '',
-                      controller: _bioController,
-                      label: 'Bio',
-                      icon: Icons.description_outlined,
-                      enabled: _isEditing,
-                      maxLines: 4,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      iconSize: 24,
-                      icon: Icon(
-                        Icons.logout,
-                        color: colorScheme.onErrorContainer,
+                      // Skills Section (Horizontal Scroll/Wrap)
+                      _buildSectionHeader(
+                        context,
+                        'Core Expertise',
+                        Icons.auto_awesome_rounded,
                       ),
-                      onPressed: () {
-                        _authBlock.logout();
-                        context.go("/login");
-                      },
-                    ),
+                      const SizedBox(height: 12),
+                      _buildSkillsSection(personBlock, colorScheme),
+
+                      const SizedBox(height: 32),
+
+                      // Information Groups
+                      _buildInfoGroup(
+                        title: 'Identification',
+                        icon: Icons.fingerprint_rounded,
+                        children: [
+                          _buildModernTextField(
+                            controller: _nameController,
+                            label: 'Full Identity',
+                            icon: Icons.badge_outlined,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _emailController,
+                            label: 'Digital Point',
+                            icon: Icons.alternate_email_rounded,
+                            enabled: _isEditing,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          _buildModernTextField(
+                            controller: _phoneController,
+                            label: 'Contact Signal',
+                            icon: Icons.sensors_rounded,
+                            enabled: _isEditing,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _buildInfoGroup(
+                        title: 'Professional Matrix',
+                        icon: Icons.lan_rounded,
+                        children: [
+                          _buildModernTextField(
+                            controller: _occupationController,
+                            label: 'Current Protocol',
+                            icon: Icons.terminal_rounded,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _companyController,
+                            label: 'Organization',
+                            icon: Icons.corporate_fare_rounded,
+                            enabled: _isEditing,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _buildInfoGroup(
+                        title: 'Education Node',
+                        icon: Icons.hub_rounded,
+                        children: [
+                          _buildModernTextField(
+                            controller: _universityController,
+                            label: 'Institution',
+                            icon: Icons.account_balance_rounded,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _educationController,
+                            label: 'Clearance Level',
+                            icon: Icons.verified_user_rounded,
+                            enabled: _isEditing,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _buildInfoGroup(
+                        title: 'Physical Location',
+                        icon: Icons.public_rounded,
+                        children: [
+                          _buildModernTextField(
+                            controller: _countryController,
+                            label: 'Territory',
+                            icon: Icons.flag_rounded,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _cityController,
+                            label: 'City Hub',
+                            icon: Icons.map_rounded,
+                            enabled: _isEditing,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      _buildInfoGroup(
+                        title: 'Digital Matrix',
+                        icon: Icons.alternate_email_rounded,
+                        children: [
+                          _buildModernTextField(
+                            controller: _githubController,
+                            label: 'GitHub Node',
+                            icon: Icons.code_rounded,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _linkedinController,
+                            label: 'LinkedIn Link',
+                            icon: Icons.link_rounded,
+                            enabled: _isEditing,
+                          ),
+                          _buildModernTextField(
+                            controller: _websiteController,
+                            label: 'External Web',
+                            icon: Icons.language_rounded,
+                            enabled: _isEditing,
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      // Danger Zone / Logout
+                      InkWell(
+                        onTap: () {
+                          _authBlock.logout();
+                          context.go("/login");
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: colorScheme.error.withOpacity(0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.power_settings_new_rounded,
+                                color: colorScheme.error,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Deactivate Session',
+                                style: TextStyle(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 64),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -612,229 +501,317 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     );
   }
 
-  Widget _buildProfileHeader(
+  Widget _buildModernHeader(
+    BuildContext context,
     ColorScheme colorScheme,
     TextTheme textTheme,
     TextEditingController controller,
     UserObjectResource objectResource,
     UserInformation info,
   ) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            // Avatar
-            Stack(
+    return Container(
+      height: 320,
+      child: Stack(
+        children: [
+          // Background Gradient / Cover
+          Container(
+            height: 220,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  colorScheme.primary,
+                  colorScheme.secondary,
+                  colorScheme.tertiary,
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(60),
+              ),
+            ),
+            child: Stack(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: colorScheme.primaryContainer,
-                  backgroundImage: objectResource.avatarImage.isNotEmpty
-                      ? NetworkImage(objectResource.avatarImage)
-                      : null,
-                  child: (objectResource.avatarImage.isEmpty)
-                      ? Icon(
-                          Icons.person,
-                          size: 50,
-                          color: colorScheme.onPrimaryContainer,
-                        )
-                      : null,
-                ),
-                if (_isEditing)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: colorScheme.primary,
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 18,
-                        color: Colors.white,
-                      ),
+                Positioned(
+                  top: -50,
+                  right: -50,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (!_isEditing)
-              Text(
-                controller.text.isNotEmpty ? controller.text : 'Username',
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
                 ),
-              )
-            else
-              TextField(
-                controller: controller,
-                textAlign: TextAlign.center,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                decoration: const InputDecoration(
-                  hintText: 'Username',
-                  border: UnderlineInputBorder(),
-                ),
-              ),
-            const SizedBox(height: 4),
-            Text(
-              "@${info.profiles.alias.split('-').first}",
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            if (info.details.bio.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(
-                info.details.bio,
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: colorScheme.primary, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                Positioned.fill(
+                  child: Icon(
+                    Icons.ac_unit_rounded,
+                    size: 100,
+                    color: Colors.white.withOpacity(0.05),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            ...children,
-          ],
-        ),
+          ),
+
+          // Profile Info Overlap
+          Positioned(
+            top: 120,
+            left: 0,
+            right: 0,
+            child: Column(
+              children: [
+                // Avatar with premium border
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 56,
+                        backgroundColor: colorScheme.primaryContainer,
+                        backgroundImage: objectResource.avatarImage.isNotEmpty
+                            ? NetworkImage(objectResource.avatarImage)
+                            : null,
+                        child: (objectResource.avatarImage.isEmpty)
+                            ? Icon(
+                                Icons.person_rounded,
+                                size: 56,
+                                color: colorScheme.onPrimaryContainer,
+                              )
+                            : null,
+                      ),
+                      if (_isEditing)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black38,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_enhance_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Name & Alias
+                Column(
+                  children: [
+                    Text(
+                      info.profiles.firstName.isNotEmpty
+                          ? "${info.profiles.firstName} ${info.profiles.lastName}"
+                          : "Long Duy",
+                      style: textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "@${info.profiles.alias.split('-').first}",
+                        style: textTheme.labelMedium?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String databaseText,
-    required String label,
-    required IconData icon,
-    required bool enabled,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-    int maxLines = 1,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 10),
+        Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Divider(
+            thickness: 0.5,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+        ),
+      ],
+    );
+  }
 
-    return enabled
-        ? TextFormField(
-            controller: controller,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            maxLines: maxLines,
-            validator: validator,
-            decoration: InputDecoration(
-              labelText: label,
-              prefixIcon: Icon(icon),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+  Widget _buildSkillsSection(PersonBlock block, ColorScheme colorScheme) {
+    return Watch((context) {
+      final skillList = block.skills.value;
+      if (skillList.isEmpty) return const SizedBox.shrink();
+
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: skillList.map((skill) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
             ),
-          )
-        : Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: colorScheme.onSurfaceVariant, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        controller.text.isNotEmpty
-                            ? controller.text
-                            : 'Not set',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
+                Icon(
+                  Icons.terminal_rounded,
+                  size: 14,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  skill.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
           );
+        }).toList(),
+      );
+    });
   }
 
-  Widget _buildDateField({
-    required ColorScheme colorScheme,
-    required bool isEditing,
-    required DateTime? selectedBirthday,
-    required VoidCallback? onTap,
+  Widget _buildInfoGroup({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: 'Birthday',
-          prefixIcon: const Icon(Icons.cake_outlined),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
+    return Column(
+      children: [
+        _buildSectionHeader(context, title, icon),
+        const SizedBox(height: 16),
+        ...children.expand((w) => [w, const SizedBox(height: 12)]).toList(),
+      ],
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool enabled,
+    TextInputType? keyboardType,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (!enabled) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceVariant.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          selectedBirthday != null
-              ? DateFormat('MMMM dd, yyyy').format(selectedBirthday)
-              : 'Not set',
-          style: TextStyle(
-            fontSize: 16,
-            color: selectedBirthday != null
-                ? colorScheme.onSurface
-                : colorScheme.onSurfaceVariant,
-          ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: colorScheme.primary, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    controller.text.isNotEmpty
+                        ? controller.text
+                        : 'Pending Matrix...',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        filled: true,
+        fillColor: colorScheme.surfaceVariant.withOpacity(0.1),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(20),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
       ),
     );

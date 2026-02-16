@@ -124,12 +124,14 @@ class FocusPage extends StatelessWidget {
                           ),
                         ),
                         const Spacer(),
-                        _SessionTypeToggle(focusBlock: focusBlock),
                       ],
                     ),
+                   
                   ),
                 ),
-
+ SliverToBoxAdapter(
+                      child: _SessionTypeToggle(focusBlock: focusBlock),
+                    ),
                 // Selection Area (Project & Task)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -356,46 +358,78 @@ class _ProjectSelector extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showProjectPicker(context, projects),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainer.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.8),
+              Theme.of(context).colorScheme.surfaceContainer.withOpacity(0.4),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: Theme.of(
               context,
-            ).colorScheme.outlineVariant.withOpacity(0.5),
+            ).colorScheme.outlineVariant.withOpacity(0.2),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 12,
-              height: 12,
+              width: 14,
+              height: 14,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selectedProject?.color != null
                     ? Color(int.parse(selectedProject!.color!))
                     : Theme.of(context).colorScheme.primary,
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (selectedProject?.color != null
+                                ? Color(int.parse(selectedProject!.color!))
+                                : Theme.of(context).colorScheme.primary)
+                            .withOpacity(0.5),
+                    blurRadius: 8,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
+                    "ACTIVE PROJECT",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  Text(
                     selectedProject?.name ?? "Select Project",
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                      fontSize: 18,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            const Icon(Icons.unfold_more_rounded, size: 20, color: Colors.grey),
           ],
         ),
       ),
@@ -487,40 +521,63 @@ class _TaskSelector extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showTaskPicker(context, tasks),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
           color: Theme.of(
             context,
-          ).colorScheme.primaryContainer.withOpacity(0.05),
+          ).colorScheme.primaryContainer.withOpacity(0.08),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
           ),
         ),
         child: Row(
           children: [
             Icon(
-              Icons.checklist_rounded,
+              Icons.bolt_rounded,
               color: Theme.of(context).colorScheme.primary,
               size: 18,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                selectedTask?.title ?? "Select Active Task",
-                style: TextStyle(
-                  fontWeight: selectedTask != null
-                      ? FontWeight.bold
-                      : FontWeight.normal,
-                  color: selectedTask != null
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "CURRENT TASK",
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.7),
+                    ),
+                  ),
+                  Text(
+                    selectedTask?.title ?? "Select Active Task",
+                    style: TextStyle(
+                      fontWeight: selectedTask != null
+                          ? FontWeight.bold
+                          : FontWeight.w500,
+                      fontSize: 15,
+                      color: selectedTask != null
+                          ? Theme.of(context).colorScheme.onSurface
+                          : Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+            const Icon(
+              Icons.keyboard_arrow_right_rounded,
+              size: 20,
+              color: Colors.grey,
+            ),
           ],
         ),
       ),
@@ -1038,31 +1095,60 @@ class _HistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final mins = session.durationSeconds ~/ 60;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline, color: modeColor, size: 18),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: modeColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.history_rounded, color: modeColor, size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "${mins}m Focus Session",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  DateFormat('MMMM d, yyyy').format(session.startTime),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Text(
             DateFormat('HH:mm').format(session.startTime),
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(width: 12),
-          Text("${mins}m Focus Session"),
-          const Spacer(),
-          Text(
-            DateFormat('MMM d').format(session.startTime),
             style: TextStyle(
-              fontSize: 11,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w900,
+              color: modeColor,
+              fontSize: 13,
             ),
           ),
         ],

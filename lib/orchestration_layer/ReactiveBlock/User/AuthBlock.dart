@@ -40,6 +40,34 @@ class AuthBlock {
        _passkeyService = passkeyService,
        _personDao = personDao;
 
+  /// Mock/Guest Login logic
+  Future<void> loginAsGuest() async {
+    status.value = AuthStatus.authenticating;
+    error.value = null;
+    print("👤 Logging in as Guest...");
+
+    try {
+      // Provide a mock JWT and fallback username
+      jwt.value = "mock_guest_jwt_token";
+      username.value = "Guest";
+
+      // We still save it to the session DAO to allow the app to "remember" this guest session
+      await _sessionDao.saveSession(jwt.value!, username.value);
+
+      status.value = AuthStatus.authenticated;
+
+      // fetchUser will attempt to call API, fail (since token is mock),
+      // and then fall back to local DB user ID 1, which acts as our mock data.
+      await fetchUser();
+
+      print("✅ Guest login successful with mock data.");
+    } catch (e) {
+      print("❌ Guest login failed: $e");
+      error.value = "Guest Access Error: ${e.toString()}";
+      status.value = AuthStatus.unauthenticated;
+    }
+  }
+
   /// Passkey Login Flow
   Future<void> loginWithPasskey(BuildContext context) async {
     status.value = AuthStatus.authenticating;

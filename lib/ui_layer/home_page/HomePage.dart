@@ -371,7 +371,7 @@ class _HomePageState extends State<HomePage> {
                           'Health',
                           Icons.favorite_rounded,
                           Colors.green,
-                          '${healthMetricsData['steps']?.value ?? 0} steps • ${healthMetricsData['food']?.value ?? 0} kcal',
+                          '${healthMetricsData['steps']?.value ?? 0} steps•${healthMetricsData['food']?.value ?? 0} kcal',
                           '/health',
                           scoreBlock.score.healthGlobalScore,
                         ),
@@ -383,7 +383,7 @@ class _HomePageState extends State<HomePage> {
                             'Finance',
                             Icons.account_balance_wallet_rounded,
                             Colors.blue,
-                            '\$${balance.toStringAsFixed(0)} • -\$${spending.toStringAsFixed(0)} this mo',
+                            '\$${balance.toStringAsFixed(0)} •\$${spending.toStringAsFixed(0)} this mo',
                             '/finance',
                             scoreBlock.score.financialGlobalScore,
                           );

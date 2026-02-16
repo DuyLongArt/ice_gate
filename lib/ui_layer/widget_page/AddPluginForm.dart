@@ -219,20 +219,31 @@ class _WidgetFormDataState extends State<AddPluginForm> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.data.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-            ),
-            if (widget.data.description != null)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                widget.data.description!,
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                widget.data.title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-          ],
+              if (widget.data.description != null)
+                Text(
+                  widget.data.description!,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
         IconButton(
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.close_rounded),
@@ -440,75 +451,74 @@ class _WidgetFormDataState extends State<AddPluginForm> {
   }
 
   Widget _buildPluginGrid(List<BasePluginProtocol> plugins) {
-    return SizedBox(
-      height: 320,
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.1,
-        ),
-        itemCount: plugins.length,
-        itemBuilder: (context, index) {
-          final plugin = plugins[index];
-          final isSelected = _selectedPlugin == plugin;
-          final colorScheme = Theme.of(context).colorScheme;
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: plugins.length,
+      itemBuilder: (context, index) {
+        final plugin = plugins[index];
+        final isSelected = _selectedPlugin == plugin;
+        final colorScheme = Theme.of(context).colorScheme;
 
-          return GestureDetector(
-            onTap: () => setState(() => _selectedPlugin = plugin),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? colorScheme.primaryContainer
-                    : colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected ? colorScheme.primary : Colors.transparent,
-                  width: 2,
-                ),
+        return GestureDetector(
+          onTap: () => setState(() => _selectedPlugin = plugin),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? colorScheme.primaryContainer
+                  : colorScheme.surfaceContainerHighest.withOpacity(0.4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected ? colorScheme.primary : Colors.transparent,
+                width: 2,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    plugin.icon,
-                    size: 32,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  plugin.icon,
+                  size: 32,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  plugin.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                     color: isSelected
                         ? colorScheme.primary
                         : colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    plugin.name,
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    plugin.description,
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.onSurface,
+                      fontSize: 10,
+                      color: colorScheme.onSurfaceVariant,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(
-                      plugin.description,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

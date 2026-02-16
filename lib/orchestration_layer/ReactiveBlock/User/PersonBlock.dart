@@ -206,6 +206,24 @@ class PersonBlock {
       );
     } catch (e) {
       print("❌ Failed to fetch user profile: $e");
+      // Fallback: Use some default data if currently in 'Initial' state to avoid blank screens
+      if (information.value.profiles.firstName == 'Initial') {
+        print("🔄 Applying default fallback data...");
+        information.value = UserInformation(
+          profiles: const UserProfile(
+            firstName: 'DuyLong',
+            lastName: 'Art',
+            alias: 'Guest-Shield',
+            profileImageUrl:
+                'https://backend.duylong.art/object/publish/default_avatar.png',
+          ),
+          details: const UserDetails(
+            bio: 'Securing the digital frontier.',
+            occupation: 'Core Security Agent',
+            location: 'Unknown Sector',
+          ),
+        );
+      }
     }
   }
 
