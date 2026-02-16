@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 // NOTE: Please ensure these imports are correct for your project structure
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
     hide ThemeData;
-import 'package:ice_shield/initial_layer/CoreLogics/CustomAuthService.dart';
 // import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Theme/ThemeAdapter.dart';
 // import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 import 'package:provider/provider.dart';
-import 'package:ice_shield/initial_layer/CoreLogics/PasskeyAuthService.dart';
 
 import '../orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart';
 
@@ -80,13 +78,10 @@ class _adapterState extends State<Adapter> {
       themeStore.loadTheme(currentThemeData?.themePath ?? "");
     });
 
-    authBlock = AuthBlock(
-      authService: CustomAuthService(baseUrl: 'https://backend.duylong.art'),
-      sessionDao: appDatabase.sessionDAO,
-      passkeyService: PasskeyAuthService(),
-      personDao: appDatabase.personManagementDAO,
-    );
-    authBlock.checkSession(context);
+    // AuthBlock is already initialized and checking session in DataLayer.
+    // We just need to ensure it's available in this scope if needed,
+    // but better to read it in build() or where used.
+    authBlock = context.read<AuthBlock>();
   }
 
   @override

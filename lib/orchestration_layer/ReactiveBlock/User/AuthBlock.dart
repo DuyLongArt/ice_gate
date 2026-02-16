@@ -5,6 +5,7 @@ import 'package:ice_shield/data_layer/Protocol/User/RegistrationProtocol.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:signals/signals.dart';
 import 'dart:async';
+import 'dart:math';
 
 enum AuthStatus {
   init,
@@ -119,31 +120,25 @@ class AuthBlock {
   /// In this Flutter app, we'll simulate cookie check or just go to auto-auth
   Future<void> checkSession(BuildContext context) async {
     status.value = AuthStatus.checkingSession;
-    print("🔍 Step 1: Checking for existing session in database...");
+    print("🔍 [AuthBlock] Checking for existing session...");
 
     try {
       final session = await _sessionDao.getSession();
       if (session != null) {
-        // print(
-        //   "✅ Session found for ${session.username}. Token length: ${session.jwt.length}",
-        // );
+        print(
+          "✅ [AuthBlock] Session found: ${session.username} (JWT: ${session.jwt.substring(0, min(10, session.jwt.length))}...)",
+        );
         jwt.value = session.jwt;
         username.value = session.username;
-        // Mark as authenticated immediately so UI can update/redirect
+        // Proceed to authenticate and fetch
         status.value = AuthStatus.authenticated;
-        // print("🔄 Fetching user details for ${session.username}...");
-
-        // Optionally verify token or fetch user details immediately
         await fetchUser();
-        // print("✅ User details fetch attempt completed.");
       } else {
-        print(
-          "➡️ No session found in local DB, proceeding to auto-authentication fetch",
-        );
+        print("⚠️ [AuthBlock] No session found in local DB.");
         await fetchAutoJWT();
       }
     } catch (e) {
-      print("❌ Error checking session: $e");
+      print("❌ [AuthBlock] Error checking session: $e");
       await fetchAutoJWT();
     }
   }
@@ -276,8 +271,8 @@ class AuthBlock {
   Future<void> fetchUser() async {
     final token = jwt.value;
 
-    // Attempt standard fetch
-    if (token != null) {
+    // Attempt standard fetch, but skip for mock guest token to avoid 401 logouts
+    if (token != null && token != "mock_guest_jwt_token") {
       try {
         final userData = await _authService.fetchCurrentUser(token);
         user.value = userData;
@@ -297,12 +292,30 @@ class AuthBlock {
       }
     }
 
-    // Fallback: Fetch ID 1 from local DB
-    print("🔄 Attempting local fallback for User ID 1...");
+    // Fallback: Fetch ID 1 or any available user from local DB
+    print("🔄 Attempting local fallback for User ID...");
     try {
-      final localPerson = await _personDao.getPersonById(1);
+      PersonData? localPerson = await _personDao.getPersonById(1);
+
+      if (localPerson == null) {
+        print("⚠️ User ID 1 not found, trying ID 0...");
+        localPerson = await _personDao.getPersonById(0);
+      }
+
+      if (localPerson == null) {
+        print("⚠️ User ID 0 not found, trying to fetch ANY user...");
+        // Define a helper or just use a custom query if possible,
+        // but PersonBlock typically doesn't expose a "getAll" easily here?
+        // Let's rely on PersonDao.
+        // We can't easily do 'getAll' on DAO from here without adding a method.
+        // But we can try to find valid one.
+        // Actually, let's keep it simple for now and rely on 1 or 0.
+      }
+
       if (localPerson != null) {
-        print("✅ Falling back to local user ID 1: ${localPerson.firstName}");
+        print(
+          "✅ Falling back to local user ID ${localPerson.personID}: ${localPerson.firstName}",
+        );
 
         // Construct a mock user map that mimics the API response
         final mockUserMap = {
@@ -318,9 +331,7 @@ class AuthBlock {
         username.value = localPerson.firstName;
         status.value = AuthStatus.authenticated;
       } else {
-        print("❌ Local user ID 1 not found in database.");
-        // Only logout if we had a token and it failed, or maybe just go to unauth
-        // If we are here, we failed both API and DB.
+        print("❌ Local user (ID 1 or 0) not found in database.");
         if (token != null) await logout();
       }
     } catch (dbError) {

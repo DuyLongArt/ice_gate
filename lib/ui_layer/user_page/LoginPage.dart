@@ -143,7 +143,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const Text(
-                            'SECURE GATEWAY',
+                            'LIFE GATEWAY',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

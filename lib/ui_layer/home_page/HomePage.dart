@@ -138,78 +138,12 @@ class _HomePageState extends State<HomePage> {
     scoreBlock = context.read<ScoreBlock>();
     authBlock.fetchUser();
     personBlock = context.read<PersonBlock>();
-    financeBlock = context.read<FinanceBlock>();
     growthBlock = context.read<GrowthBlock>();
-    healthMetricsDAO = database.healthMetricsDAO;
+    healthMetricsDAO = context.read<HealthMetricsDAO>();
+    financeBlock = context.read<FinanceBlock>();
 
-    // initPlatformState();
-    // initPlatformState();
-
-    void onPedestrianStatusUpdate(PedestrianStatus event) {
-      print(event);
-      setState(() {
-        // You can create a String variable 'status' to display this in the UI
-        // String status = event.status;
-        print("status step: ${event.status}");
-      });
-    }
-
-    // 3. Error handling is required by the Pedometer plugin
-    void onPedestrianStatusError(error) {
-      print('Pedestrian Status Error: $error');
-    }
-
-    void onStepCountError(error) {
-      print('Step Count Error: $error');
-    }
-
-    void initPlatformState() {
-      try {
-        // Listen to step counts
-        _stepCountStream = Pedometer.stepCountStream;
-        _stepCountStream.listen(onStepCount).onError(onStepCountError);
-
-        // Listen to status (walking, stopped, etc.)
-        _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
-        _pedestrianStatusStream
-            .listen(onPedestrianStatusUpdate)
-            .onError(onPedestrianStatusError);
-      } catch (e) {
-        print("Pedometer initialization error: $e");
-      }
-    }
-
-    // Call initPlatformState safely
-    initPlatformState();
-
-    final jwtValue = authBlock.jwt.value;
-    if (jwtValue != null) {
-      personBlock.fetchFromDatabase(jwtValue);
-    }
-
-    Future.microtask(() {
-      internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
-      externalWidgetBlock.refreshBlock(database.externalWidgetsDAO);
-
-      // Fetch steps from Apple Health
-      HealthService.fetchStepCount().then((steps) {
-        if (mounted) {
-          setState(() {
-            currentSteps = steps;
-          });
-        }
-      });
-
-      HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
-        newData,
-      ) {
-        if (mounted) {
-          setState(() {
-            healthMetricsData = newData;
-          });
-        }
-      });
-    });
+    _initPedometer();
+    _fetchInitialData();
 
     // Level Up effect
     int? lastLevel;
@@ -222,17 +156,56 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _initPedometer() {
+    try {
+      _stepCountStream = Pedometer.stepCountStream;
+      _stepCountStream
+          .listen((event) {
+            if (mounted) setState(() => currentSteps = event.steps);
+          })
+          .onError((error) => debugPrint('Step Count Error: $error'));
+
+      _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
+      _pedestrianStatusStream
+          .listen((event) {
+            debugPrint("Pedestrian status: ${event.status}");
+          })
+          .onError((error) => debugPrint('Pedestrian Status Error: $error'));
+    } catch (e) {
+      debugPrint("Pedometer initialization error: $e");
+    }
+  }
+
+  void _fetchInitialData() {
+    final jwtValue = authBlock.jwt.value;
+    if (jwtValue != null) {
+      personBlock.fetchFromDatabase(jwtValue);
+    }
+
+    Future.microtask(() {
+      internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
+      externalWidgetBlock.refreshBlock(database.externalWidgetsDAO);
+
+      HealthService.fetchStepCount().then((steps) {
+        if (mounted) setState(() => currentSteps = steps);
+      });
+
+      HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
+        newData,
+      ) {
+        if (mounted) {
+          setState(() {
+            healthMetricsData = newData;
+          });
+        }
+      });
+    });
+  }
+
   @override
   void dispose() {
     _levelEffect?.call();
     super.dispose();
-  }
-
-  void onStepCount(StepCount event) {
-    print(event);
-    setState(() {
-      currentSteps = event.steps;
-    });
   }
 
   // 1. Handles the actual step count data
@@ -963,21 +936,19 @@ class _HomePageState extends State<HomePage> {
     final item = Container(
       width: 120,
       decoration: BoxDecoration(
-        
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        
+
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
             blurRadius: 15,
             offset: const Offset(0, 8),
-            
           ),
         ],
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4)
-        ,width: 5
-        
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 5,
         ),
       ),
       child: Column(
@@ -1027,7 +998,7 @@ class _HomePageState extends State<HomePage> {
               },
               child: Container(
                 padding: const EdgeInsets.all(4),
-                
+
                 decoration: BoxDecoration(
                   color: Colors.red,
                   shape: BoxShape.circle,
@@ -1066,7 +1037,7 @@ class _HomePageState extends State<HomePage> {
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
-        
+
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -1074,7 +1045,10 @@ class _HomePageState extends State<HomePage> {
             offset: const Offset(0, 8),
           ),
         ],
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4),width: 5),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+          width: 5,
+        ),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1131,7 +1105,10 @@ class _HomePageState extends State<HomePage> {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: Colors.red,
-                  border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.4), width: 5),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withOpacity(0.4),
+                    width: 5,
+                  ),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close, color: Colors.white, size: 14),

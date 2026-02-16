@@ -22,6 +22,7 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBloc
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FocusBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
+import 'package:ice_shield/security_routing_layer/Routing/url_route/InternalRoute.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
@@ -226,6 +227,11 @@ class _DataLayerState extends State<DataLayer> {
           objectDatabaseBlock.updateUrlOfUser(personBlock);
         });
       }
+    });
+
+    // Bridge AuthBlock status to GoRouter refresh notifier
+    effect(() {
+      authStatusNotifier.value = authBlock.status.value;
     });
   }
 

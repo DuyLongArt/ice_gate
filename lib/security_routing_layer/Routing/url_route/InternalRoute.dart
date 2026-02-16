@@ -30,15 +30,49 @@ import 'package:ice_shield/ui_layer/social_page/SocialPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
 import 'package:ice_shield/ui_layer/user_page/PersonalInformationPage.dart';
 import 'package:ice_shield/ui_layer/user_page/LoginPage.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/AuthBlock.dart';
 // import 'MainShell.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey =
     GlobalKey<NavigatorState>();
 
+final ValueNotifier<AuthStatus?> authStatusNotifier = ValueNotifier(
+  AuthStatus.checkingSession,
+);
+
 final GoRouter router = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/login',
+  initialLocation: '/',
+  refreshListenable: authStatusNotifier,
+  redirect: (context, state) {
+    final status = authStatusNotifier.value;
+    final isLoggingIn = state.uri.path == '/login';
+
+    debugPrint("🛣️ [GoRouter] Path: ${state.uri.path}, Status: $status");
+
+    if (status == null ||
+        status == AuthStatus.checkingSession ||
+        status == AuthStatus.init) {
+      return null;
+    }
+
+    if (status == AuthStatus.authenticated) {
+      if (isLoggingIn) {
+        debugPrint(
+          "🛣️ [GoRouter] Authenticated, redirecting from /login to /",
+        );
+        return '/';
+      }
+    } else {
+      if (!isLoggingIn) {
+        debugPrint("🛣️ [GoRouter] Unauthenticated, redirecting to /login");
+        return '/login';
+      }
+    }
+
+    return null;
+  },
   routes: [
     // --- NON-SHELL ROUTES ---
     GoRoute(
