@@ -509,13 +509,13 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
     UserObjectResource objectResource,
     UserInformation info,
   ) {
-    return Container(
+    return SizedBox(
       height: 320,
       child: Stack(
         children: [
           // Background Gradient / Cover
           Container(
-            height: 220,
+            height: 190,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -537,7 +537,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
                   right: -50,
                   child: Container(
                     width: 200,
-                    height: 200,
+                    height: 100,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       shape: BoxShape.circle,
@@ -557,7 +557,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
 
           // Profile Info Overlap
           Positioned(
-            top: 120,
+            top: 100,
             left: 0,
             right: 0,
             child: Column(
@@ -730,7 +730,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
       children: [
         _buildSectionHeader(context, title, icon),
         const SizedBox(height: 16),
-        ...children.expand((w) => [w, const SizedBox(height: 12)]).toList(),
+        ...children.expand((w) => [w, const SizedBox(height: 12)]),
       ],
     );
   }
@@ -748,7 +748,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant.withOpacity(0.2),
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.2),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -800,7 +800,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
         labelText: label,
         prefixIcon: Icon(icon),
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.1),
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide(color: colorScheme.outlineVariant),

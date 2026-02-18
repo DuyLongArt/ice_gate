@@ -9,7 +9,6 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/PersonBlock.da
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
-import 'package:pedometer/pedometer.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/data_layer/Protocol/Home/InternalWidgetProtocol.dart';
@@ -23,7 +22,7 @@ import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidgetBlock.dart';
 import 'package:ice_shield/orchestration_layer/Action/WidgetNavigator.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
-import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/HealthBlock.dart';
 import 'package:ice_shield/ui_layer/projects_page/CreateProjectDialog.dart';
 import 'package:ice_shield/ui_layer/projects_page/TextEditorPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
@@ -93,7 +92,35 @@ class HomePage extends StatefulWidget {
       destination: "/",
       size: size,
       mainFunction: () => context.go("/"),
-      icon: Icons.ac_unit,
+      icon: Icons.home,
+      // iconWidget: Watch((context) {
+      //   final steps = Provider.of<HealthBlock>(
+      //     context,
+      //     listen: false,
+      //   ).todaySteps.value;
+      //   return Center(
+      //     child: Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         Text(
+      //           steps >= 1000
+      //               ? '${(steps / 1000).toStringAsFixed(1)}k'
+      //               : '$steps',
+      //           style: const TextStyle(
+      //             color: Colors.white,
+      //             fontSize: 12,
+      //             fontWeight: FontWeight.bold,
+      //           ),
+      //         ),
+      //         const Icon(
+      //           Icons.directions_walk,
+      //           size: 10,
+      //           color: Colors.white70,
+      //         ),
+      //       ],
+      //     ),
+      //   );
+      // }),
       doubleClickFunction: () {
         print("double click");
         context.pop();
@@ -119,12 +146,10 @@ class _HomePageState extends State<HomePage> {
   late FinanceBlock financeBlock;
   late ExternalWidgetBlock externalWidgetBlock;
   late GrowthBlock growthBlock;
+  late HealthBlock healthBlock;
   EffectCleanup? _levelEffect;
   final _levelUpToShow = signal<int?>(null);
 
-  late Stream<StepCount> _stepCountStream;
-  late Stream<PedestrianStatus> _pedestrianStatusStream;
-  int currentSteps = 0;
   late double sizeOfWidget;
 
   @override
@@ -141,8 +166,8 @@ class _HomePageState extends State<HomePage> {
     growthBlock = context.read<GrowthBlock>();
     healthMetricsDAO = context.read<HealthMetricsDAO>();
     financeBlock = context.read<FinanceBlock>();
+    healthBlock = context.read<HealthBlock>();
 
-    _initPedometer();
     _fetchInitialData();
 
     // Level Up effect
@@ -156,26 +181,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _initPedometer() {
-    try {
-      _stepCountStream = Pedometer.stepCountStream;
-      _stepCountStream
-          .listen((event) {
-            if (mounted) setState(() => currentSteps = event.steps);
-          })
-          .onError((error) => debugPrint('Step Count Error: $error'));
-
-      _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
-      _pedestrianStatusStream
-          .listen((event) {
-            debugPrint("Pedestrian status: ${event.status}");
-          })
-          .onError((error) => debugPrint('Pedestrian Status Error: $error'));
-    } catch (e) {
-      debugPrint("Pedometer initialization error: $e");
-    }
-  }
-
   void _fetchInitialData() {
     final jwtValue = authBlock.jwt.value;
     if (jwtValue != null) {
@@ -185,10 +190,6 @@ class _HomePageState extends State<HomePage> {
     Future.microtask(() {
       internalWidgetBlock.refreshBlock(database.internalWidgetsDAO);
       externalWidgetBlock.refreshBlock(database.externalWidgetsDAO);
-
-      HealthService.fetchStepCount().then((steps) {
-        if (mounted) setState(() => currentSteps = steps);
-      });
 
       HealthMetricsData.getMetricsByDay(DateTime.now(), context).then((
         newData,
@@ -271,8 +272,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    sizeOfWidget = MediaQuery.of(context).size.width * 0.25;
-    sizeOfWidget = sizeOfWidget.clamp(100, 120);
+    const double sizeOfDeparment = 220;
+    sizeOfWidget = MediaQuery.of(context).size.width * 0.3;
+    sizeOfWidget = sizeOfWidget.clamp(100, 200);
     return SwipeablePage(
       onSwipe: () => Navigator.maybePop(context), // Use maybePop for safety
       direction: SwipeablePageDirection.leftToRight,
@@ -330,24 +332,28 @@ class _HomePageState extends State<HomePage> {
                   _buildGamifiedHeader(context),
                   const SizedBox(height: 24),
 
-                  // --- SECTION: LIFE DASHBOARD ---
-                  _buildSectionHeader(context, 'Life Dashboard', '/profile'),
+                  // --- SECTION: Things in life ---
+                  _buildSectionHeader(context, 'Things in life', '/profile'),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 180,
+                    height: sizeOfDeparment,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       children: [
-                        _buildQuickAccessCard(
-                          context,
-                          'Health',
-                          Icons.favorite_rounded,
-                          Colors.green,
-                          '${healthMetricsData['steps']?.value ?? 0} steps•${healthMetricsData['food']?.value ?? 0} kcal',
-                          '/health',
-                          scoreBlock.score.healthGlobalScore,
-                        ),
+                        Watch((context) {
+                          final steps = healthBlock.todaySteps.value;
+                          final kcal = healthMetricsData['food']?.value ?? 0;
+                          return _buildQuickAccessCard(
+                            context,
+                            'Health',
+                            Icons.favorite_rounded,
+                            Colors.green,
+                            '$steps steps•$kcal kcal',
+                            '/health',
+                            scoreBlock.score.healthGlobalScore,
+                          );
+                        }),
                         Watch((context) {
                           final balance = financeBlock.totalBalance.value;
                           final spending = financeBlock.monthlySpending.value;
@@ -441,7 +447,8 @@ class _HomePageState extends State<HomePage> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 16),
                             child: SizedBox(
-                              width: 110,
+                              width: sizeOfWidget,
+                              height: sizeOfWidget,
                               child: _buildAddButton(context),
                             ),
                           );
@@ -451,7 +458,8 @@ class _HomePageState extends State<HomePage> {
                             padding: const EdgeInsets.only(right: 16),
 
                             child: SizedBox(
-                              width: 110,
+                              width: sizeOfWidget,
+                              height: sizeOfWidget,
                               child: _buildGridItem(context, widget),
                             ),
                           );
@@ -463,7 +471,7 @@ class _HomePageState extends State<HomePage> {
                           return Padding(
                             padding: const EdgeInsets.only(right: 16),
                             child: SizedBox(
-                              width: 110,
+                              width: sizeOfWidget,
                               child: _buildExternalGridItem(context, ext),
                             ),
                           );
@@ -474,57 +482,8 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 32),
 
-                  // --- SECTION: RECENT ACTIVITY ---
-                  AutoSizeText(
-                    'Recent Insights',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                    ),
-                    maxLines: 1,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Placeholder for insights
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.lightbulb_outline_rounded,
-                          color: colorScheme.primary,
-                          size: 32,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Smart Tip',
-                                style: textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'You\'ve been 20% more active this week. Keep it up!',
-                                style: textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // --- SECTION: QUOTES ---
+                  _buildQuotesSection(context),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -553,7 +512,7 @@ class _HomePageState extends State<HomePage> {
     final rank = scoreBlock.rankTitle.value;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -603,7 +562,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 2),
                   Text(
                     'Level $level',
-                    style: textTheme.headlineSmall?.copyWith(
+                    style: textTheme.titleLarge?.copyWith(
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
@@ -720,7 +679,7 @@ class _HomePageState extends State<HomePage> {
     final progress = GamificationService.getProgressToNextLevel(safeScore);
 
     return Container(
-      width: 200,
+      width: 220,
       margin: const EdgeInsets.only(right: 12),
       child: Card(
         elevation: 0,
@@ -894,10 +853,12 @@ class _HomePageState extends State<HomePage> {
         onTap: () => _showAddPluginDialog(context),
         borderRadius: BorderRadius.circular(28),
         child: Container(
-          width: 120,
+          width: sizeOfWidget,
+          height: sizeOfWidget,
           decoration: BoxDecoration(
             color: colorScheme.surface,
             borderRadius: BorderRadius.circular(28),
+
             border: Border.all(
               color: colorScheme.primary.withOpacity(0.2),
               width: 5,
@@ -909,7 +870,7 @@ class _HomePageState extends State<HomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: colorScheme.primary.withOpacity(0.1),
                   border: Border.all(
@@ -934,7 +895,9 @@ class _HomePageState extends State<HomePage> {
     }
 
     final item = Container(
-      width: 120,
+      width: sizeOfWidget,
+      height: sizeOfWidget,
+      //  padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
@@ -956,6 +919,7 @@ class _HomePageState extends State<HomePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(12),
+
             decoration: BoxDecoration(
               color: colorScheme.primaryContainer.withOpacity(0.2),
               borderRadius: BorderRadius.circular(16),
@@ -1034,6 +998,7 @@ class _HomePageState extends State<HomePage> {
 
     final item = Container(
       width: sizeOfWidget,
+      height: sizeOfWidget,
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(28),
@@ -1201,6 +1166,85 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildQuotesSection(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return StreamBuilder<List<QuoteData>>(
+      stream: database.quoteDAO.watchActiveQuotes(),
+      builder: (context, snapshot) {
+        final activeQuotes = snapshot.data ?? [];
+        String quote;
+        String? author;
+
+        if (activeQuotes.isNotEmpty) {
+          final qData = activeQuotes[DateTime.now().day % activeQuotes.length];
+          quote = qData.content;
+          author = qData.author;
+        } else {
+          // Fallback static quotes
+          final defaultQuotes = [
+            "The only way to do great work is to love what you do.",
+            "Innovation distinguishes between a leader and a follower.",
+            "Stay hungry, stay foolish.",
+            "Your time is limited, don't waste it living someone else's life.",
+            "Design is not just what it looks like and feels like. Design is how it works.",
+          ];
+          quote = defaultQuotes[DateTime.now().day % defaultQuotes.length];
+          author = null;
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.format_quote_rounded,
+                color: colorScheme.primary,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                quote,
+                textAlign: TextAlign.center,
+                style: textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                  color: colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+              if (author != null && author.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  "- $author",
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary.withOpacity(0.7),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Container(
+                height: 2,
+                width: 40,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

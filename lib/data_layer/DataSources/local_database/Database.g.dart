@@ -88,6 +88,13 @@ mixin _$FocusSessionsDAOMixin on DatabaseAccessor<AppDatabase> {
   $FocusSessionsTableTable get focusSessionsTable =>
       attachedDatabase.focusSessionsTable;
 }
+mixin _$QuoteDAOMixin on DatabaseAccessor<AppDatabase> {
+  $QuotesTableTable get quotesTable => attachedDatabase.quotesTable;
+}
+mixin _$CustomNotificationDAOMixin on DatabaseAccessor<AppDatabase> {
+  $CustomNotificationsTableTable get customNotificationsTable =>
+      attachedDatabase.customNotificationsTable;
+}
 
 class $ExternalWidgetsTableTable extends ExternalWidgetsTable
     with TableInfo<$ExternalWidgetsTableTable, ExternalWidgetData> {
@@ -14764,6 +14771,891 @@ class FocusSessionsTableCompanion extends UpdateCompanion<FocusSessionData> {
   }
 }
 
+class $CustomNotificationsTableTable extends CustomNotificationsTable
+    with TableInfo<$CustomNotificationsTableTable, CustomNotificationData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomNotificationsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _notificationIDMeta = const VerificationMeta(
+    'notificationID',
+  );
+  @override
+  late final GeneratedColumn<int> notificationID = GeneratedColumn<int>(
+    'notification_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scheduledTimeMeta = const VerificationMeta(
+    'scheduledTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledTime =
+      GeneratedColumn<DateTime>(
+        'scheduled_time',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _repeatFrequencyMeta = const VerificationMeta(
+    'repeatFrequency',
+  );
+  @override
+  late final GeneratedColumn<String> repeatFrequency = GeneratedColumn<String>(
+    'repeat_frequency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('none'),
+  );
+  static const VerificationMeta _repeatDaysMeta = const VerificationMeta(
+    'repeatDays',
+  );
+  @override
+  late final GeneratedColumn<String> repeatDays = GeneratedColumn<String>(
+    'repeat_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isEnabledMeta = const VerificationMeta(
+    'isEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> isEnabled = GeneratedColumn<bool>(
+    'is_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    notificationID,
+    title,
+    content,
+    scheduledTime,
+    repeatFrequency,
+    repeatDays,
+    isEnabled,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'custom_notifications_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CustomNotificationData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('notification_i_d')) {
+      context.handle(
+        _notificationIDMeta,
+        notificationID.isAcceptableOrUnknown(
+          data['notification_i_d']!,
+          _notificationIDMeta,
+        ),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('scheduled_time')) {
+      context.handle(
+        _scheduledTimeMeta,
+        scheduledTime.isAcceptableOrUnknown(
+          data['scheduled_time']!,
+          _scheduledTimeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledTimeMeta);
+    }
+    if (data.containsKey('repeat_frequency')) {
+      context.handle(
+        _repeatFrequencyMeta,
+        repeatFrequency.isAcceptableOrUnknown(
+          data['repeat_frequency']!,
+          _repeatFrequencyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repeat_days')) {
+      context.handle(
+        _repeatDaysMeta,
+        repeatDays.isAcceptableOrUnknown(data['repeat_days']!, _repeatDaysMeta),
+      );
+    }
+    if (data.containsKey('is_enabled')) {
+      context.handle(
+        _isEnabledMeta,
+        isEnabled.isAcceptableOrUnknown(data['is_enabled']!, _isEnabledMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {notificationID};
+  @override
+  CustomNotificationData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomNotificationData(
+      notificationID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}notification_i_d'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      scheduledTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_time'],
+      )!,
+      repeatFrequency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repeat_frequency'],
+      )!,
+      repeatDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repeat_days'],
+      ),
+      isEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_enabled'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CustomNotificationsTableTable createAlias(String alias) {
+    return $CustomNotificationsTableTable(attachedDatabase, alias);
+  }
+}
+
+class CustomNotificationData extends DataClass
+    implements Insertable<CustomNotificationData> {
+  final int notificationID;
+  final String title;
+  final String content;
+  final DateTime scheduledTime;
+  final String repeatFrequency;
+  final String? repeatDays;
+  final bool isEnabled;
+  final DateTime createdAt;
+  const CustomNotificationData({
+    required this.notificationID,
+    required this.title,
+    required this.content,
+    required this.scheduledTime,
+    required this.repeatFrequency,
+    this.repeatDays,
+    required this.isEnabled,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['notification_i_d'] = Variable<int>(notificationID);
+    map['title'] = Variable<String>(title);
+    map['content'] = Variable<String>(content);
+    map['scheduled_time'] = Variable<DateTime>(scheduledTime);
+    map['repeat_frequency'] = Variable<String>(repeatFrequency);
+    if (!nullToAbsent || repeatDays != null) {
+      map['repeat_days'] = Variable<String>(repeatDays);
+    }
+    map['is_enabled'] = Variable<bool>(isEnabled);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CustomNotificationsTableCompanion toCompanion(bool nullToAbsent) {
+    return CustomNotificationsTableCompanion(
+      notificationID: Value(notificationID),
+      title: Value(title),
+      content: Value(content),
+      scheduledTime: Value(scheduledTime),
+      repeatFrequency: Value(repeatFrequency),
+      repeatDays: repeatDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repeatDays),
+      isEnabled: Value(isEnabled),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CustomNotificationData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomNotificationData(
+      notificationID: serializer.fromJson<int>(json['notificationID']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String>(json['content']),
+      scheduledTime: serializer.fromJson<DateTime>(json['scheduledTime']),
+      repeatFrequency: serializer.fromJson<String>(json['repeatFrequency']),
+      repeatDays: serializer.fromJson<String?>(json['repeatDays']),
+      isEnabled: serializer.fromJson<bool>(json['isEnabled']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'notificationID': serializer.toJson<int>(notificationID),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String>(content),
+      'scheduledTime': serializer.toJson<DateTime>(scheduledTime),
+      'repeatFrequency': serializer.toJson<String>(repeatFrequency),
+      'repeatDays': serializer.toJson<String?>(repeatDays),
+      'isEnabled': serializer.toJson<bool>(isEnabled),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CustomNotificationData copyWith({
+    int? notificationID,
+    String? title,
+    String? content,
+    DateTime? scheduledTime,
+    String? repeatFrequency,
+    Value<String?> repeatDays = const Value.absent(),
+    bool? isEnabled,
+    DateTime? createdAt,
+  }) => CustomNotificationData(
+    notificationID: notificationID ?? this.notificationID,
+    title: title ?? this.title,
+    content: content ?? this.content,
+    scheduledTime: scheduledTime ?? this.scheduledTime,
+    repeatFrequency: repeatFrequency ?? this.repeatFrequency,
+    repeatDays: repeatDays.present ? repeatDays.value : this.repeatDays,
+    isEnabled: isEnabled ?? this.isEnabled,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  CustomNotificationData copyWithCompanion(
+    CustomNotificationsTableCompanion data,
+  ) {
+    return CustomNotificationData(
+      notificationID: data.notificationID.present
+          ? data.notificationID.value
+          : this.notificationID,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      scheduledTime: data.scheduledTime.present
+          ? data.scheduledTime.value
+          : this.scheduledTime,
+      repeatFrequency: data.repeatFrequency.present
+          ? data.repeatFrequency.value
+          : this.repeatFrequency,
+      repeatDays: data.repeatDays.present
+          ? data.repeatDays.value
+          : this.repeatDays,
+      isEnabled: data.isEnabled.present ? data.isEnabled.value : this.isEnabled,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomNotificationData(')
+          ..write('notificationID: $notificationID, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('scheduledTime: $scheduledTime, ')
+          ..write('repeatFrequency: $repeatFrequency, ')
+          ..write('repeatDays: $repeatDays, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    notificationID,
+    title,
+    content,
+    scheduledTime,
+    repeatFrequency,
+    repeatDays,
+    isEnabled,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomNotificationData &&
+          other.notificationID == this.notificationID &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.scheduledTime == this.scheduledTime &&
+          other.repeatFrequency == this.repeatFrequency &&
+          other.repeatDays == this.repeatDays &&
+          other.isEnabled == this.isEnabled &&
+          other.createdAt == this.createdAt);
+}
+
+class CustomNotificationsTableCompanion
+    extends UpdateCompanion<CustomNotificationData> {
+  final Value<int> notificationID;
+  final Value<String> title;
+  final Value<String> content;
+  final Value<DateTime> scheduledTime;
+  final Value<String> repeatFrequency;
+  final Value<String?> repeatDays;
+  final Value<bool> isEnabled;
+  final Value<DateTime> createdAt;
+  const CustomNotificationsTableCompanion({
+    this.notificationID = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.scheduledTime = const Value.absent(),
+    this.repeatFrequency = const Value.absent(),
+    this.repeatDays = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  CustomNotificationsTableCompanion.insert({
+    this.notificationID = const Value.absent(),
+    required String title,
+    required String content,
+    required DateTime scheduledTime,
+    this.repeatFrequency = const Value.absent(),
+    this.repeatDays = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : title = Value(title),
+       content = Value(content),
+       scheduledTime = Value(scheduledTime);
+  static Insertable<CustomNotificationData> custom({
+    Expression<int>? notificationID,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<DateTime>? scheduledTime,
+    Expression<String>? repeatFrequency,
+    Expression<String>? repeatDays,
+    Expression<bool>? isEnabled,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (notificationID != null) 'notification_i_d': notificationID,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (scheduledTime != null) 'scheduled_time': scheduledTime,
+      if (repeatFrequency != null) 'repeat_frequency': repeatFrequency,
+      if (repeatDays != null) 'repeat_days': repeatDays,
+      if (isEnabled != null) 'is_enabled': isEnabled,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  CustomNotificationsTableCompanion copyWith({
+    Value<int>? notificationID,
+    Value<String>? title,
+    Value<String>? content,
+    Value<DateTime>? scheduledTime,
+    Value<String>? repeatFrequency,
+    Value<String?>? repeatDays,
+    Value<bool>? isEnabled,
+    Value<DateTime>? createdAt,
+  }) {
+    return CustomNotificationsTableCompanion(
+      notificationID: notificationID ?? this.notificationID,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      scheduledTime: scheduledTime ?? this.scheduledTime,
+      repeatFrequency: repeatFrequency ?? this.repeatFrequency,
+      repeatDays: repeatDays ?? this.repeatDays,
+      isEnabled: isEnabled ?? this.isEnabled,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (notificationID.present) {
+      map['notification_i_d'] = Variable<int>(notificationID.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (scheduledTime.present) {
+      map['scheduled_time'] = Variable<DateTime>(scheduledTime.value);
+    }
+    if (repeatFrequency.present) {
+      map['repeat_frequency'] = Variable<String>(repeatFrequency.value);
+    }
+    if (repeatDays.present) {
+      map['repeat_days'] = Variable<String>(repeatDays.value);
+    }
+    if (isEnabled.present) {
+      map['is_enabled'] = Variable<bool>(isEnabled.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomNotificationsTableCompanion(')
+          ..write('notificationID: $notificationID, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('scheduledTime: $scheduledTime, ')
+          ..write('repeatFrequency: $repeatFrequency, ')
+          ..write('repeatDays: $repeatDays, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $QuotesTableTable extends QuotesTable
+    with TableInfo<$QuotesTableTable, QuoteData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $QuotesTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _quoteIDMeta = const VerificationMeta(
+    'quoteID',
+  );
+  @override
+  late final GeneratedColumn<int> quoteID = GeneratedColumn<int>(
+    'quote_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+    'author',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    quoteID,
+    content,
+    author,
+    isActive,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'quotes_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<QuoteData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('quote_i_d')) {
+      context.handle(
+        _quoteIDMeta,
+        quoteID.isAcceptableOrUnknown(data['quote_i_d']!, _quoteIDMeta),
+      );
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('author')) {
+      context.handle(
+        _authorMeta,
+        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {quoteID};
+  @override
+  QuoteData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return QuoteData(
+      quoteID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quote_i_d'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      author: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author'],
+      ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $QuotesTableTable createAlias(String alias) {
+    return $QuotesTableTable(attachedDatabase, alias);
+  }
+}
+
+class QuoteData extends DataClass implements Insertable<QuoteData> {
+  final int quoteID;
+  final String content;
+  final String? author;
+  final bool isActive;
+  final DateTime createdAt;
+  const QuoteData({
+    required this.quoteID,
+    required this.content,
+    this.author,
+    required this.isActive,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['quote_i_d'] = Variable<int>(quoteID);
+    map['content'] = Variable<String>(content);
+    if (!nullToAbsent || author != null) {
+      map['author'] = Variable<String>(author);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  QuotesTableCompanion toCompanion(bool nullToAbsent) {
+    return QuotesTableCompanion(
+      quoteID: Value(quoteID),
+      content: Value(content),
+      author: author == null && nullToAbsent
+          ? const Value.absent()
+          : Value(author),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory QuoteData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return QuoteData(
+      quoteID: serializer.fromJson<int>(json['quoteID']),
+      content: serializer.fromJson<String>(json['content']),
+      author: serializer.fromJson<String?>(json['author']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'quoteID': serializer.toJson<int>(quoteID),
+      'content': serializer.toJson<String>(content),
+      'author': serializer.toJson<String?>(author),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  QuoteData copyWith({
+    int? quoteID,
+    String? content,
+    Value<String?> author = const Value.absent(),
+    bool? isActive,
+    DateTime? createdAt,
+  }) => QuoteData(
+    quoteID: quoteID ?? this.quoteID,
+    content: content ?? this.content,
+    author: author.present ? author.value : this.author,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  QuoteData copyWithCompanion(QuotesTableCompanion data) {
+    return QuoteData(
+      quoteID: data.quoteID.present ? data.quoteID.value : this.quoteID,
+      content: data.content.present ? data.content.value : this.content,
+      author: data.author.present ? data.author.value : this.author,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuoteData(')
+          ..write('quoteID: $quoteID, ')
+          ..write('content: $content, ')
+          ..write('author: $author, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(quoteID, content, author, isActive, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is QuoteData &&
+          other.quoteID == this.quoteID &&
+          other.content == this.content &&
+          other.author == this.author &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt);
+}
+
+class QuotesTableCompanion extends UpdateCompanion<QuoteData> {
+  final Value<int> quoteID;
+  final Value<String> content;
+  final Value<String?> author;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  const QuotesTableCompanion({
+    this.quoteID = const Value.absent(),
+    this.content = const Value.absent(),
+    this.author = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  QuotesTableCompanion.insert({
+    this.quoteID = const Value.absent(),
+    required String content,
+    this.author = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : content = Value(content);
+  static Insertable<QuoteData> custom({
+    Expression<int>? quoteID,
+    Expression<String>? content,
+    Expression<String>? author,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (quoteID != null) 'quote_i_d': quoteID,
+      if (content != null) 'content': content,
+      if (author != null) 'author': author,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  QuotesTableCompanion copyWith({
+    Value<int>? quoteID,
+    Value<String>? content,
+    Value<String?>? author,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+  }) {
+    return QuotesTableCompanion(
+      quoteID: quoteID ?? this.quoteID,
+      content: content ?? this.content,
+      author: author ?? this.author,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (quoteID.present) {
+      map['quote_i_d'] = Variable<int>(quoteID.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('QuotesTableCompanion(')
+          ..write('quoteID: $quoteID, ')
+          ..write('content: $content, ')
+          ..write('author: $author, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14804,6 +15696,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $TransactionsTableTable(this);
   late final $FocusSessionsTableTable focusSessionsTable =
       $FocusSessionsTableTable(this);
+  late final $CustomNotificationsTableTable customNotificationsTable =
+      $CustomNotificationsTableTable(this);
+  late final $QuotesTableTable quotesTable = $QuotesTableTable(this);
   late final ThemesTableDAO themesTableDAO = ThemesTableDAO(
     this as AppDatabase,
   );
@@ -14835,6 +15730,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final FocusSessionsDAO focusSessionsDAO = FocusSessionsDAO(
     this as AppDatabase,
   );
+  late final CustomNotificationDAO customNotificationDAO =
+      CustomNotificationDAO(this as AppDatabase);
+  late final QuoteDAO quoteDAO = QuoteDAO(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14865,6 +15763,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     themeTable,
     transactionsTable,
     focusSessionsTable,
+    customNotificationsTable,
+    quotesTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -27462,6 +28362,475 @@ typedef $$FocusSessionsTableTableProcessedTableManager =
       FocusSessionData,
       PrefetchHooks Function({bool personID, bool projectID, bool taskID})
     >;
+typedef $$CustomNotificationsTableTableCreateCompanionBuilder =
+    CustomNotificationsTableCompanion Function({
+      Value<int> notificationID,
+      required String title,
+      required String content,
+      required DateTime scheduledTime,
+      Value<String> repeatFrequency,
+      Value<String?> repeatDays,
+      Value<bool> isEnabled,
+      Value<DateTime> createdAt,
+    });
+typedef $$CustomNotificationsTableTableUpdateCompanionBuilder =
+    CustomNotificationsTableCompanion Function({
+      Value<int> notificationID,
+      Value<String> title,
+      Value<String> content,
+      Value<DateTime> scheduledTime,
+      Value<String> repeatFrequency,
+      Value<String?> repeatDays,
+      Value<bool> isEnabled,
+      Value<DateTime> createdAt,
+    });
+
+class $$CustomNotificationsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CustomNotificationsTableTable> {
+  $$CustomNotificationsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get notificationID => $composableBuilder(
+    column: $table.notificationID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repeatFrequency => $composableBuilder(
+    column: $table.repeatFrequency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repeatDays => $composableBuilder(
+    column: $table.repeatDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CustomNotificationsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CustomNotificationsTableTable> {
+  $$CustomNotificationsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get notificationID => $composableBuilder(
+    column: $table.notificationID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repeatFrequency => $composableBuilder(
+    column: $table.repeatFrequency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repeatDays => $composableBuilder(
+    column: $table.repeatDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CustomNotificationsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CustomNotificationsTableTable> {
+  $$CustomNotificationsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get notificationID => $composableBuilder(
+    column: $table.notificationID,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledTime => $composableBuilder(
+    column: $table.scheduledTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get repeatFrequency => $composableBuilder(
+    column: $table.repeatFrequency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get repeatDays => $composableBuilder(
+    column: $table.repeatDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isEnabled =>
+      $composableBuilder(column: $table.isEnabled, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$CustomNotificationsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CustomNotificationsTableTable,
+          CustomNotificationData,
+          $$CustomNotificationsTableTableFilterComposer,
+          $$CustomNotificationsTableTableOrderingComposer,
+          $$CustomNotificationsTableTableAnnotationComposer,
+          $$CustomNotificationsTableTableCreateCompanionBuilder,
+          $$CustomNotificationsTableTableUpdateCompanionBuilder,
+          (
+            CustomNotificationData,
+            BaseReferences<
+              _$AppDatabase,
+              $CustomNotificationsTableTable,
+              CustomNotificationData
+            >,
+          ),
+          CustomNotificationData,
+          PrefetchHooks Function()
+        > {
+  $$CustomNotificationsTableTableTableManager(
+    _$AppDatabase db,
+    $CustomNotificationsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CustomNotificationsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$CustomNotificationsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CustomNotificationsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> notificationID = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> scheduledTime = const Value.absent(),
+                Value<String> repeatFrequency = const Value.absent(),
+                Value<String?> repeatDays = const Value.absent(),
+                Value<bool> isEnabled = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CustomNotificationsTableCompanion(
+                notificationID: notificationID,
+                title: title,
+                content: content,
+                scheduledTime: scheduledTime,
+                repeatFrequency: repeatFrequency,
+                repeatDays: repeatDays,
+                isEnabled: isEnabled,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> notificationID = const Value.absent(),
+                required String title,
+                required String content,
+                required DateTime scheduledTime,
+                Value<String> repeatFrequency = const Value.absent(),
+                Value<String?> repeatDays = const Value.absent(),
+                Value<bool> isEnabled = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => CustomNotificationsTableCompanion.insert(
+                notificationID: notificationID,
+                title: title,
+                content: content,
+                scheduledTime: scheduledTime,
+                repeatFrequency: repeatFrequency,
+                repeatDays: repeatDays,
+                isEnabled: isEnabled,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CustomNotificationsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CustomNotificationsTableTable,
+      CustomNotificationData,
+      $$CustomNotificationsTableTableFilterComposer,
+      $$CustomNotificationsTableTableOrderingComposer,
+      $$CustomNotificationsTableTableAnnotationComposer,
+      $$CustomNotificationsTableTableCreateCompanionBuilder,
+      $$CustomNotificationsTableTableUpdateCompanionBuilder,
+      (
+        CustomNotificationData,
+        BaseReferences<
+          _$AppDatabase,
+          $CustomNotificationsTableTable,
+          CustomNotificationData
+        >,
+      ),
+      CustomNotificationData,
+      PrefetchHooks Function()
+    >;
+typedef $$QuotesTableTableCreateCompanionBuilder =
+    QuotesTableCompanion Function({
+      Value<int> quoteID,
+      required String content,
+      Value<String?> author,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+    });
+typedef $$QuotesTableTableUpdateCompanionBuilder =
+    QuotesTableCompanion Function({
+      Value<int> quoteID,
+      Value<String> content,
+      Value<String?> author,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+    });
+
+class $$QuotesTableTableFilterComposer
+    extends Composer<_$AppDatabase, $QuotesTableTable> {
+  $$QuotesTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get quoteID => $composableBuilder(
+    column: $table.quoteID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$QuotesTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $QuotesTableTable> {
+  $$QuotesTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get quoteID => $composableBuilder(
+    column: $table.quoteID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$QuotesTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $QuotesTableTable> {
+  $$QuotesTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get quoteID =>
+      $composableBuilder(column: $table.quoteID, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$QuotesTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $QuotesTableTable,
+          QuoteData,
+          $$QuotesTableTableFilterComposer,
+          $$QuotesTableTableOrderingComposer,
+          $$QuotesTableTableAnnotationComposer,
+          $$QuotesTableTableCreateCompanionBuilder,
+          $$QuotesTableTableUpdateCompanionBuilder,
+          (
+            QuoteData,
+            BaseReferences<_$AppDatabase, $QuotesTableTable, QuoteData>,
+          ),
+          QuoteData,
+          PrefetchHooks Function()
+        > {
+  $$QuotesTableTableTableManager(_$AppDatabase db, $QuotesTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$QuotesTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$QuotesTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$QuotesTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> quoteID = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String?> author = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => QuotesTableCompanion(
+                quoteID: quoteID,
+                content: content,
+                author: author,
+                isActive: isActive,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> quoteID = const Value.absent(),
+                required String content,
+                Value<String?> author = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => QuotesTableCompanion.insert(
+                quoteID: quoteID,
+                content: content,
+                author: author,
+                isActive: isActive,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$QuotesTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $QuotesTableTable,
+      QuoteData,
+      $$QuotesTableTableFilterComposer,
+      $$QuotesTableTableOrderingComposer,
+      $$QuotesTableTableAnnotationComposer,
+      $$QuotesTableTableCreateCompanionBuilder,
+      $$QuotesTableTableUpdateCompanionBuilder,
+      (QuoteData, BaseReferences<_$AppDatabase, $QuotesTableTable, QuoteData>),
+      QuoteData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -27519,4 +28888,11 @@ class $AppDatabaseManager {
       $$TransactionsTableTableTableManager(_db, _db.transactionsTable);
   $$FocusSessionsTableTableTableManager get focusSessionsTable =>
       $$FocusSessionsTableTableTableManager(_db, _db.focusSessionsTable);
+  $$CustomNotificationsTableTableTableManager get customNotificationsTable =>
+      $$CustomNotificationsTableTableTableManager(
+        _db,
+        _db.customNotificationsTable,
+      );
+  $$QuotesTableTableTableManager get quotesTable =>
+      $$QuotesTableTableTableManager(_db, _db.quotesTable);
 }

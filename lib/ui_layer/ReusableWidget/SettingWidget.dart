@@ -12,10 +12,11 @@ class SettingsWidget extends StatelessWidget {
 
   const SettingsWidget({super.key, this.title = 'App Settings'});
 
-  static Widget icon(BuildContext context) {
+  static Widget icon(BuildContext context, {double size = 24.0}) {
     return Container(
       child: IconButton(
         icon: Icon(Icons.settings),
+        iconSize: size,
         onPressed: () {
           context.go('/settings');
         },

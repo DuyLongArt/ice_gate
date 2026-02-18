@@ -63,7 +63,7 @@ class HealthMetricCard extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(16.0), // Reduced from 24
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,105 +72,123 @@ class HealthMetricCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(10), // Reduced from 12
                           decoration: BoxDecoration(
                             color: metrics.color.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(
+                              16,
+                            ), // Reduced from 20
                           ),
                           child: Icon(
                             metrics.icon,
                             color: metrics.color,
-                            size: compact ? 22 : 28,
+                            size: compact ? 20 : 24, // Reduced sizes
                           ),
                         ),
                         if (metrics.trend != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (metrics.trendPositive ?? true)
-                                  ? Colors.green.withValues(alpha: 0.1)
-                                  : Colors.red.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  (metrics.trendPositive ?? true)
-                                      ? Icons.trending_up_rounded
-                                      : Icons.trending_down_rounded,
-                                  size: 14,
-                                  color: (metrics.trendPositive ?? true)
-                                      ? Colors.green
-                                      : Colors.red,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  metrics.trend!,
-                                  style: TextStyle(
+                          Flexible(
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (metrics.trendPositive ?? true)
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.red.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    (metrics.trendPositive ?? true)
+                                        ? Icons.trending_up_rounded
+                                        : Icons.trending_down_rounded,
+                                    size: 12, // Reduced from 14
                                     color: (metrics.trendPositive ?? true)
                                         ? Colors.green
                                         : Colors.red,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 10,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      metrics.trend!,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: (metrics.trendPositive ?? true)
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 9, // Reduced from 10
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          metrics.name.toUpperCase(),
-                          style: textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                            fontSize: 10,
+                    const SizedBox(height: 12), // Reduced from 20
+                    Flexible(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            metrics.name.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
+                              fontSize: 9, // Reduced from 10
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Expanded(
-                              child: AutoSizeText(
-                                metrics.value,
-                                style: textTheme.headlineSmall?.copyWith(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: compact ? 24 : 28,
+                          const SizedBox(height: 2), // Reduced from 4
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Expanded(
+                                child: AutoSizeText(
+                                  metrics.value,
+                                  style: textTheme.headlineSmall?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: compact
+                                        ? 22
+                                        : 26, // Reduced from 24:28
+                                  ),
+                                  maxLines: 1,
+                                  minFontSize: 12,
                                 ),
-                                maxLines: 1,
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              metrics.unit,
-                              style: textTheme.labelMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w900,
+                              const SizedBox(width: 2), // Reduced from 4
+                              Text(
+                                metrics.unit,
+                                style: textTheme.labelSmall?.copyWith(
+                                  // Changed from labelMedium
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     if (metrics.progress != null) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8), // Reduced from 16
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
                           value: metrics.progress!.clamp(0.0, 1.0),
-                          minHeight: 8,
+                          minHeight: 6, // Reduced from 8
                           backgroundColor: metrics.color.withValues(alpha: 0.1),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             metrics.color,

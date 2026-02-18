@@ -608,7 +608,7 @@ class _SocialPageState extends State<SocialPage>
 
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       items: const [
                         DropdownMenuItem(
                           value: 'friend',

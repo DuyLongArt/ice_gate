@@ -1,14 +1,13 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:provider/provider.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
-import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import 'InternalDragIconWidget.dart'; // The Grid Cell
 import 'StoreWidget.dart'; // The Bottom Bar
+import 'package:ice_shield/ui_layer/canvas_page/CanvasDynamicIsland.dart';
 
 // --- MAIN SCREEN WRAPPER ---
 
@@ -107,75 +106,7 @@ class _DragCanvasState extends State<DragCanvas> {
     return Column(
       children: [
         const SizedBox(height: 12),
-        Center(
-          child: Watch((context) {
-            final isStoreOpen = DragCanvasGrid.isOpenStore.value;
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.elasticOut,
-              width: isStoreOpen ? 230 : 180,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        context.go('/');
-                      }
-                    },
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: AutoSizeText(
-                        isStoreOpen ? "WIDGET STORE" : "CANVAS",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: DragCanvasGrid.toggleStore,
-                    child: AnimatedRotation(
-                      turns: isStoreOpen
-                          ? 0.125
-                          : 0, // Rotate 45 deg (plus to x)
-                      duration: const Duration(milliseconds: 300),
-                      child: const Icon(
-                        Icons.add_circle_outline_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
+        const Center(child: CanvasDynamicIsland()),
         const SizedBox(height: 10),
 
         Expanded(

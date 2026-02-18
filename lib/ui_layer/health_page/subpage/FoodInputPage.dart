@@ -115,11 +115,11 @@ class _FoodInputPageState extends State<FoodInputPage> {
       setState(() {
         _pickedImage = File(savedImage.path);
         _imagePath = fileName;
-        print("Path when I save image: " + savedImage.path);
+        print("Path when I save image: ${savedImage.path}");
       });
       // Trigger AI analysis if food name is also present or just analysis from image
       _analyzeFood();
-        } catch (e) {
+    } catch (e) {
       debugPrint('Error picking image: $e');
     }
   }
@@ -350,7 +350,7 @@ class _FoodInputPageState extends State<FoodInputPage> {
                       subtitle: Row(
                         children: [
                           AutoSizeText(
-                            meal.meal.eatenAt.toString().substring(0,16),
+                            meal.meal.eatenAt.toString().substring(0, 16),
                             maxLines: 1,
                           ),
                           const SizedBox(width: 8),
@@ -380,74 +380,134 @@ class _FoodInputPageState extends State<FoodInputPage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMealDialog(context),
-        child: const Icon(Icons.camera),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'manual',
+            onPressed: () => _showAddMealDialog(context, null),
+            label: const Text('Manual'),
+            icon: const Icon(Icons.edit),
+            backgroundColor: Colors.orange,
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'capture',
+            onPressed: () => _showCaptureOptions(context),
+            label: const Text('Capture'),
+            icon: const Icon(Icons.camera_alt),
+            backgroundColor: colorScheme.primary,
+          ),
+        ],
       ),
     );
   }
 
-  void _showAddMealDialog(BuildContext context) {
+  void _showCaptureOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.pop(context); // Close sheet
+                _pickImage(ImageSource.camera).then((_) {
+                  if (_pickedImage != null) {
+                    _showAddMealDialog(context, _pickedImage);
+                  }
+                });
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.pop(context); // Close sheet
+                _pickImage(ImageSource.gallery).then((_) {
+                  if (_pickedImage != null) {
+                    _showAddMealDialog(context, _pickedImage);
+                  }
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddMealDialog(BuildContext context, File? image) {
+    // If an image was passed in, set it as the picked image
+    if (image != null) {
+      _pickedImage = image;
+      // Trigger analysis automatically if image is provided
+      _analyzeFood();
+    } else {
+      // Clear if manual mode
+      _pickedImage = null;
+      _imagePath = "";
+    }
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add Meal'),
+          title: Text(image != null ? 'Edit Captured Meal' : 'Add Meal'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onTap: () async {
-                    await showModalBottomSheet(
-                      context: context,
-                      builder: (context) => SafeArea(
-                        child: Wrap(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.photo_library),
-                              title: const Text('Gallery'),
-                              onTap: () {
-                                _pickImage(ImageSource.gallery).then((_) {
-                                  setDialogState(() {});
-                                });
-                                Navigator.pop(context);
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.camera_alt),
-                              title: const Text('Camera'),
-                              onTap: () {
-                                _pickImage(ImageSource.camera).then((_) {
-                                  setDialogState(() {});
-                                });
-                                _showAddMealDialog(context);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
+                if (_pickedImage != null)
+                  Container(
                     height: 150,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: _pickedImage != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.file(
-                              File("${appDir.path}/$_imagePath"),
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : const Icon(Icons.add_a_photo, size: 40),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(_pickedImage!, fit: BoxFit.cover),
+                    ),
                   ),
-                ),
+                if (_pickedImage == null)
+                  GestureDetector(
+                    onTap: () {
+                      // Fallback for manual adding photo inside dialog
+                      Navigator.pop(context);
+                      _showCaptureOptions(context);
+                    },
+                    child: Container(
+                      height: 100,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.add_a_photo, color: Colors.grey),
+                          Text(
+                            "Add Photo (Optional)",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _foodController,
@@ -455,14 +515,10 @@ class _FoodInputPageState extends State<FoodInputPage> {
                     labelText: 'Food Name',
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (text) {
-                    // Debounce or trigger analysis on focus loss/explicit button might be better,
-                    // but for now we can have a button or just a simple trigger.
-                  },
                   onEditingComplete: _analyzeFood,
                 ),
                 const SizedBox(height: 12),
-                TextField(
+                 TextField(
                   controller: _caloriesController,
                   decoration: InputDecoration(
                     labelText: 'Energy',
@@ -484,8 +540,10 @@ class _FoodInputPageState extends State<FoodInputPage> {
                   ),
                   keyboardType: TextInputType.number,
                 ),
+               
               ],
             ),
+            
           ),
           actions: [
             TextButton(

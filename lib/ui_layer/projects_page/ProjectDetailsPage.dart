@@ -45,7 +45,7 @@ class ProjectDetailsPage extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
-                            'Project completed! ${PROJECT_SCORE_INCREMENT} points awarded.',
+                            'Project completed! $PROJECT_SCORE_INCREMENT points awarded.',
                           ),
                           duration: Duration(seconds: 1),
                         ),

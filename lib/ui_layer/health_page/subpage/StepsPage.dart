@@ -1,10 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:drift/drift.dart' as drift;
-import 'package:pedometer/pedometer.dart';
-import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/HealthBlock.dart';
+import 'package:signals_flutter/signals_flutter.dart';
 
 class StepsPage extends StatefulWidget {
   const StepsPage({super.key});
@@ -14,20 +13,8 @@ class StepsPage extends StatefulWidget {
 }
 
 class _StepsPageState extends State<StepsPage> {
-  int currentSteps = 0;
-  final int dailyGoal = 10000;
-
-  late Stream<StepCount> _stepCountStream;
-  late Stream<PedestrianStatus> _pedestrianStatusStream;
-
   void initPlatformState() {
-    _stepCountStream = Pedometer.stepCountStream;
-    _stepCountStream.listen(onStepCount).onError(onStepCountError);
-
-    _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
-    _pedestrianStatusStream
-        .listen(onPedestrianStatusUpdate)
-        .onError(onPedestrianStatusError);
+    // Platform state now managed by HealthBlock via DataLayer
   }
 
   @override
@@ -35,97 +22,26 @@ class _StepsPageState extends State<StepsPage> {
     super.dispose();
   }
 
-  void onStepCount(StepCount event) {
-    setState(() {
-      currentSteps = event.steps;
-    });
-    _saveSteps(event.steps);
-  }
-
-  void onPedestrianStatusUpdate(PedestrianStatus event) {
-    setState(() {
-      debugPrint("status step: ${event.status}");
-    });
-  }
-
-  void onPedestrianStatusError(error) {
-    debugPrint('Pedestrian Status Error: $error');
-  }
-
-  void onStepCountError(error) {
-    debugPrint('Step Count Error: $error');
-  }
-
-  double get progressPercentage =>
-      (currentSteps / dailyGoal * 100).clamp(0, 100);
-  int get remainingSteps => (dailyGoal - currentSteps).clamp(0, dailyGoal);
-  double get distanceKm => currentSteps * 0.0008;
-  int get caloriesBurned => (currentSteps * 0.04).round();
+  // local methods replaced by signals
 
   @override
   void initState() {
     super.initState();
-    _loadData();
-    initPlatformState();
 
-    // Fetch steps from Apple Health
+    // Fetch steps from Apple Health and sync to block
     HealthService.fetchStepCount().then((steps) {
-      if (mounted && steps > currentSteps) {
-        setState(() {
-          currentSteps = steps;
-        });
-        _saveSteps(steps);
+      if (mounted) {
+        context.read<HealthBlock>().updateSteps(steps);
       }
     });
-  }
-
-  Future<void> _loadData() async {
-    final dao = context.read<HealthMetricsDAO>();
-    final today = DateTime.now();
-    final data = await dao.getMetricsForDate(1, today);
-    if (mounted && data != null && data.steps > currentSteps) {
-      setState(() {
-        currentSteps = data.steps;
-      });
-    }
-  }
-
-  Future<void> _saveSteps(int steps) async {
-    try {
-      final dao = context.read<HealthMetricsDAO>();
-      final today = DateTime.now();
-      final currentMetrics = await dao.getMetricsForDate(1, today);
-
-      if (currentMetrics != null) {
-        if (steps > currentMetrics.steps) {
-          await dao.insertOrUpdateMetrics(
-            currentMetrics
-                .toCompanion(true)
-                .copyWith(
-                  steps: drift.Value(steps),
-                  updatedAt: drift.Value(DateTime.now()),
-                ),
-          );
-        }
-      } else {
-        await dao.insertOrUpdateMetrics(
-          HealthMetricsTableCompanion.insert(
-            personID: 1,
-            date: today,
-            steps: drift.Value(steps),
-            updatedAt: drift.Value(DateTime.now()),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error saving steps: $e');
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    final healthBlock = context.watch<HealthBlock>();
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -140,7 +56,7 @@ class _StepsPageState extends State<StepsPage> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: colorScheme.primary.withValues(alpha: 0.1),
+                color: colorScheme.primary.withOpacity(0.1),
               ),
             ),
           ),
@@ -195,47 +111,63 @@ class _StepsPageState extends State<StepsPage> {
                             Text(
                               'Steps Taken',
                               style: textTheme.labelLarge?.copyWith(
-                                color: colorScheme.onSurface.withValues(
-                                  alpha: 0.6,
-                                ),
+                                color: colorScheme.onSurface.withOpacity(0.6),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Text(
-                              currentSteps.toString(),
-                              style: textTheme.displayLarge?.copyWith(
-                                color: colorScheme.onSurface,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 64,
-                                letterSpacing: -2,
-                              ),
-                            ),
+                            Watch((context) {
+                              final steps = healthBlock.todaySteps.value;
+                              return Text(
+                                steps.toString(),
+                                style: textTheme.displayLarge?.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 64,
+                                  letterSpacing: -2,
+                                ),
+                              );
+                            }),
                             const SizedBox(height: 10),
-                            LinearProgressIndicator(
-                              value: currentSteps / dailyGoal,
-                              backgroundColor:
-                                  colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(10),
-                              minHeight: 10,
-                            ),
+                            Watch((context) {
+                              final steps = healthBlock.todaySteps.value;
+                              final dailyGoal = healthBlock.dailyStepGoal.value;
+                              return LinearProgressIndicator(
+                                value: steps / dailyGoal,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(10),
+                                minHeight: 10,
+                              );
+                            }),
                             const SizedBox(height: 15),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  'Goal: $dailyGoal',
-                                  style: textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${progressPercentage.toStringAsFixed(0)}%',
-                                  style: textTheme.bodyLarge?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                                Watch((context) {
+                                  final dailyGoal =
+                                      healthBlock.dailyStepGoal.value;
+                                  return Text(
+                                    'Goal: $dailyGoal',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  );
+                                }),
+                                Watch((context) {
+                                  final steps = healthBlock.todaySteps.value;
+                                  final dailyGoal =
+                                      healthBlock.dailyStepGoal.value;
+                                  final progress = (steps / dailyGoal * 100)
+                                      .clamp(0.0, 100.0);
+                                  return Text(
+                                    '${progress.toStringAsFixed(0)}%',
+                                    style: textTheme.bodyLarge?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  );
+                                }),
                               ],
                             ),
                           ],
@@ -256,44 +188,64 @@ class _StepsPageState extends State<StepsPage> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final cardWidth = (constraints.maxWidth - 15) / 2;
-                      return Wrap(
-                        spacing: 15,
-                        runSpacing: 15,
-                        children: [
-                          _buildModernStatCard(
-                            context,
-                            'Remaining',
-                            remainingSteps.toString(),
-                            'steps',
-                            Icons.flag_rounded,
-                            cardWidth,
-                          ),
-                          _buildModernStatCard(
-                            context,
-                            'Distance',
-                            distanceKm.toStringAsFixed(2),
-                            'km',
-                            Icons.route_rounded,
-                            cardWidth,
-                          ),
-                          _buildModernStatCard(
-                            context,
-                            'Calories',
-                            caloriesBurned.toString(),
-                            'kcal',
-                            Icons.local_fire_department_rounded,
-                            cardWidth,
-                          ),
-                          _buildModernStatCard(
-                            context,
-                            'Active Time',
-                            '${(currentSteps / 100).round()}',
-                            'min',
-                            Icons.timer_rounded,
-                            cardWidth,
-                          ),
-                        ],
-                      );
+                      return Watch((context) {
+                        final steps = healthBlock.todaySteps.value;
+                        final total = healthBlock.totalSteps.value;
+                        final dailyGoal = healthBlock.dailyStepGoal.value;
+                        final remaining = (dailyGoal - steps).clamp(
+                          0,
+                          dailyGoal,
+                        );
+                        final distance = steps * 0.0008;
+                        final calories = (steps * 0.04).round();
+
+                        return Wrap(
+                          spacing: 15,
+                          runSpacing: 15,
+                          children: [
+                            _buildModernStatCard(
+                              context,
+                              'Total Steps',
+                              total.toString(),
+                              'steps',
+                              Icons.workspace_premium_rounded,
+                              cardWidth,
+                            ),
+                            _buildModernStatCard(
+                              context,
+                              'Remaining',
+                              remaining.toString(),
+                              'steps',
+                              Icons.flag_rounded,
+                              cardWidth,
+                            ),
+                            _buildModernStatCard(
+                              context,
+                              'Distance',
+                              distance.toStringAsFixed(2),
+                              'km',
+                              Icons.route_rounded,
+                              cardWidth,
+                            ),
+                            _buildModernStatCard(
+                              context,
+                              'Calories',
+                              calories.toString(),
+                              'kcal',
+                              Icons.local_fire_department_rounded,
+                              cardWidth,
+                            ),
+                            _buildModernStatCard(
+                              context,
+                              'Active Time',
+                              '${(steps / 100).round()}',
+                              'min',
+                              Icons.timer_rounded,
+                              cardWidth,
+                            ),
+                          ],
+                        );
+                      });
                     },
                   ),
                   const SizedBox(height: 40),

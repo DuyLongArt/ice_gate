@@ -1,6 +1,6 @@
-# Ice Shield Database Schema Documentation
+# ICE Gate Database Schema Documentation
 
-This document provides an overview of the local database schema used in the **Ice Shield** application. The database is implemented using **Drift** (SQLite for Dart).
+This document provides an overview of the local database schema used in the **ICE Gate** application. The database is implemented using **Drift** (SQLite for Dart).
 
 **Database File:** `lib/data_layer/DataSources/local_database/Database.dart`
 **Schema Version:** 7

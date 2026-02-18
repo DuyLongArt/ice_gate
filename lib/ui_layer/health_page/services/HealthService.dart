@@ -1,49 +1,48 @@
 import 'package:flutter/foundation.dart';
-import 'package:pedometer/pedometer.dart';
+import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HealthService {
-  static int _cachedSteps = 0;
-  static bool _isListening = false;
+  static final Health health = Health();
+  static bool _isAuthorized = false;
 
-  static void _initSubscription() {
-    if (_isListening) return;
+  /// Requests permission to access health data.
+  static Future<bool> requestPermissions() async {
+    if (_isAuthorized) return true;
 
-    _isListening = true;
-    Pedometer.stepCountStream.listen(
-      (event) {
-        _cachedSteps = event.steps;
-        debugPrint("HealthService: Steps updated to $_cachedSteps");
-      },
-      onError: (error) {
-        debugPrint("HealthService: Pedometer error: $error");
-      },
-      cancelOnError: false,
-    );
-  }
+    // Check motion permission first (needed for some data types on iOS)
+    await Permission.sensors.request();
 
-  /// Fetches today's step count using the Pedometer plugin.
-  /// Returns 0 if permissions are denied or an error occurs.
-  static Future<int> fetchStepCount() async {
-    _initSubscription();
-
-    // Return immediately if we have data
-    if (_cachedSteps > 0) return _cachedSteps;
+    final types = [HealthDataType.STEPS];
+    final permissions = [HealthDataAccess.READ];
 
     try {
-      // If no data yet, wait briefly for the first event
-      // Reduced timeout to 2 seconds to avoid blocking too long
-      if (_cachedSteps == 0) {
-        final event = await Pedometer.stepCountStream.first.timeout(
-          const Duration(seconds: 2),
-        );
-        _cachedSteps = event.steps;
-      }
-      return _cachedSteps;
-    } catch (error) {
-      // Don't throw exception, just log and return 0 (or cached value)
-      debugPrint(
-        "HealthService: Initial step fetch timed out or failed (returning 0).",
+      _isAuthorized = await health.requestAuthorization(
+        types,
+        permissions: permissions,
       );
+      debugPrint("HealthService: Authorization status: $_isAuthorized");
+      return _isAuthorized;
+    } catch (e) {
+      debugPrint("HealthService: Authorization error: $e");
+      return false;
+    }
+  }
+
+  /// Fetches today's step count from Apple Health/Google Fit.
+  static Future<int> fetchStepCount() async {
+    final authorized = await requestPermissions();
+    if (!authorized) return 0;
+
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day);
+
+    try {
+      final steps = await health.getTotalStepsInInterval(midnight, now);
+      debugPrint("HealthService: Fetched steps from HealthKit: $steps");
+      return steps ?? 0;
+    } catch (e) {
+      debugPrint("HealthService: Error fetching steps: $e");
       return 0;
     }
   }

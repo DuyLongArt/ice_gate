@@ -1,5 +1,10 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
+import 'package:file_picker/file_picker.dart';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
@@ -8,31 +13,174 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.da
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 
-class FocusPage extends StatelessWidget {
+class TimerThemeInfo {
+  final String name;
+  final Color color;
+  final IconData icon;
+  final String soundAsset; // e.g. 'sounds/ocean.mp3'
+
+  const TimerThemeInfo(
+    this.name,
+    this.color,
+    this.icon, {
+    this.soundAsset = 'sounds/white_noise.mp3',
+  });
+}
+
+final timerThemes = [
+  TimerThemeInfo(
+    'Default',
+    Colors.blue,
+    Icons.water_drop_rounded,
+    soundAsset: 'sounds/rain.mp3',
+  ),
+  // Nature
+  TimerThemeInfo(
+    'Emerald Haven',
+    const Color(0xFF2E8B57),
+    Icons.landscape_rounded,
+    soundAsset: 'sounds/forest_stream.mp3',
+  ),
+  TimerThemeInfo(
+    'Emerald Forest',
+    const Color(0xFF006400),
+    Icons.forest_rounded,
+    soundAsset: 'sounds/birds.mp3',
+  ),
+  TimerThemeInfo(
+    'Sakura Zen',
+    const Color(0xFFFFB7C5),
+    Icons.local_florist_rounded,
+    soundAsset: 'sounds/zen_garden.mp3',
+  ),
+  // Elements
+  TimerThemeInfo(
+    'Deep Sea',
+    const Color(0xFF00008B),
+    Icons.scuba_diving_rounded,
+    soundAsset: 'sounds/ocean_waves.mp3',
+  ),
+  TimerThemeInfo(
+    'Frosty Morning',
+    const Color(0xFFE0FFFF),
+    Icons.ac_unit_rounded,
+    soundAsset: 'sounds/snow_wind.mp3',
+  ),
+  TimerThemeInfo(
+    'Sunset',
+    Colors.orange,
+    Icons.wb_twilight_rounded,
+    soundAsset: 'sounds/crickets.mp3',
+  ),
+  // Vibe
+  TimerThemeInfo(
+    'Cyberpunk 2077',
+    const Color(0xFFFCEE0A),
+    Icons.bolt_rounded,
+    soundAsset: 'sounds/cyber_ambience.mp3',
+  ),
+  TimerThemeInfo(
+    'Nordic Night',
+    const Color(0xFF191970),
+    Icons.nights_stay_rounded,
+    soundAsset: 'sounds/campfire.mp3',
+  ),
+  TimerThemeInfo(
+    'Royal Velvet',
+    const Color(0xFF800080),
+    Icons.diamond_rounded,
+    soundAsset: 'sounds/lofi.mp3',
+  ),
+  TimerThemeInfo(
+    'Midnight Gold',
+    const Color(0xFFFFD700),
+    Icons.star_rounded,
+    soundAsset: 'sounds/space_drone.mp3',
+  ),
+  // Colors
+  TimerThemeInfo(
+    'Light Purple',
+    const Color(0xFFE6E6FA),
+    Icons.bubble_chart_rounded,
+    soundAsset: 'sounds/bubbles.mp3',
+  ),
+  TimerThemeInfo(
+    'Purple Seed',
+    const Color(0xFF8A2BE2),
+    Icons.grain_rounded,
+    soundAsset: 'sounds/white_noise.mp3',
+  ),
+  TimerThemeInfo(
+    'Nebula',
+    Colors.purpleAccent,
+    Icons.auto_awesome_rounded,
+    soundAsset: 'sounds/nebula_hum.mp3',
+  ),
+  TimerThemeInfo(
+    'Cherry',
+    Colors.redAccent,
+    Icons.local_fire_department_rounded,
+    soundAsset: 'sounds/fire_crackle.mp3',
+  ),
+];
+
+class FocusPage extends StatefulWidget {
   const FocusPage({super.key});
 
-  static Widget icon(BuildContext context, {double? size}) {
-    final focusBlock = context.watch<FocusBlock>();
-    final isRunning = focusBlock.isRunning.watch(context);
+  @override
+  State<FocusPage> createState() => _FocusPageState();
+}
 
-    return Tooltip(
-      message: isRunning ? 'Focusing...' : 'Focus Timer',
-      child: IconButton(
-        icon: Icon(
-          isRunning ? Icons.pause_circle_filled_rounded : Icons.timer_rounded,
-          color: isRunning ? Theme.of(context).colorScheme.primary : null,
-        ),
-        iconSize: size,
-        onPressed: () => context.push('/health/focus'),
-      ),
-    );
+class _FocusPageState extends State<FocusPage> {
+  StreamSubscription? _audioSubscription;
+  bool _hasSetupListeners = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Sync logic has been moved to FocusBlock and FocusAudioHandler
+    // to prevent infinite loops and state fighting.
+  }
+
+  @override
+  void dispose() {
+    _audioSubscription?.cancel();
+    super.dispose();
   }
 
   String formatTime(int totalSeconds) {
     int minutes = totalSeconds ~/ 60;
     int seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  // Effect to listen for changes
+  void _setupNotificationListener(BuildContext context, FocusBlock focusBlock) {
+    if (_hasSetupListeners) return;
+    _hasSetupListeners = true;
+
+    final notificationService = context.read<LocalNotificationService>();
+
+    effect(() {
+      final isRunning = focusBlock.isRunning.value;
+      if (isRunning) {
+        // notificationService.showNotification(99, "Focus Mode On", "Time to concentrate!");
+        // We might not want to spam notifications on every resume, maybe just start.
+      }
+    });
+
+    effect(() {
+      final remaining = focusBlock.remainingTime.value;
+      if (remaining == 0) {
+        notificationService.showNotification(
+          100,
+          "Session Complete",
+          "Great job! Take a break.",
+        );
+      }
+    });
   }
 
   @override
@@ -43,6 +191,12 @@ class FocusPage extends StatelessWidget {
     final projectBlock = context.watch<ProjectBlock>();
     final growthBlock = context.watch<GrowthBlock>();
 
+    _setupNotificationListener(context, focusBlock);
+
+    final focusMin = focusBlock.focusDuration.watch(context);
+    final shortMin = focusBlock.shortBreakDuration.watch(context);
+    final longMin = focusBlock.longBreakDuration.watch(context);
+
     final timeStr = formatTime(focusBlock.remainingTime.watch(context));
     final isRunning = focusBlock.isRunning.watch(context);
     final sessionType = focusBlock.currentSessionType.watch(context);
@@ -50,18 +204,19 @@ class FocusPage extends StatelessWidget {
     final sessionsCount = focusBlock.sessionsCompletedToday.watch(context);
     final selectedProjId = focusBlock.selectedProjectId.watch(context);
     final selectedTaskId = focusBlock.selectedTaskId.watch(context);
+    final themeName = focusBlock.timerTheme.watch(context);
+
+    // Get current theme
+    final themeStyle = timerThemes.firstWhere(
+      (t) => t.name == themeName,
+      orElse: () => timerThemes.first,
+    );
 
     // Dynamic Colors based on mode
-    final modeColor = sessionType == 'Focus'
-        ? colorScheme.primary
-        : Colors.teal;
+    final modeColor = sessionType == 'Focus' ? themeStyle.color : Colors.teal;
     final modeBg = sessionType == 'Focus'
-        ? colorScheme.primaryContainer.withOpacity(0.1)
+        ? themeStyle.color.withOpacity(0.1)
         : Colors.teal.withOpacity(0.1);
-
-    final focusMin = focusBlock.focusDuration.watch(context);
-    final shortMin = focusBlock.shortBreakDuration.watch(context);
-    final longMin = focusBlock.longBreakDuration.watch(context);
 
     int totalDuration = focusMin * 60;
     if (sessionType == 'Short Break') totalDuration = shortMin * 60;
@@ -126,12 +281,11 @@ class FocusPage extends StatelessWidget {
                         const Spacer(),
                       ],
                     ),
-                   
                   ),
                 ),
- SliverToBoxAdapter(
-                      child: _SessionTypeToggle(focusBlock: focusBlock),
-                    ),
+                SliverToBoxAdapter(
+                  child: _SessionTypeToggle(focusBlock: focusBlock),
+                ),
                 // Selection Area (Project & Task)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -172,6 +326,7 @@ class FocusPage extends StatelessWidget {
                         isRunning: isRunning,
                         focusBlock: focusBlock,
                         totalDuration: totalDuration,
+                        themeName: themeName,
                       ),
                       const Spacer(),
 
@@ -238,9 +393,19 @@ class _BlurCircle extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(
+          colors: [
+            color.withOpacity(0.4),
+            color.withOpacity(0.1),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+      ),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+        filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
         child: Container(color: Colors.transparent),
       ),
     );
@@ -267,29 +432,19 @@ class _TimerControls extends StatelessWidget {
       children: [
         IconButton.filled(
           onPressed: () => focusBlock.resetTimer(),
-          icon: const Icon(Icons.refresh_rounded),
+          icon: const Icon(Icons.refresh_rounded, size: 20),
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-          ),
-        ),
-        const SizedBox(width: 24),
-        FloatingActionButton.large(
-          onPressed: () =>
-              isRunning ? focusBlock.pauseTimer() : focusBlock.startTimer(),
-          backgroundColor: modeColor,
-          foregroundColor: Colors.white,
-          elevation: 8,
-          child: Icon(
-            isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-            size: 40,
+            padding: const EdgeInsets.all(12),
           ),
         ),
         const SizedBox(width: 24),
         IconButton.filled(
           onPressed: () => _showSettings(context),
-          icon: const Icon(Icons.settings_suggest_rounded),
+          icon: const Icon(Icons.settings_suggest_rounded, size: 20),
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+            padding: const EdgeInsets.all(12),
           ),
         ),
       ],
@@ -732,6 +887,7 @@ class _TimerCircle extends StatelessWidget {
   final bool isRunning;
   final FocusBlock focusBlock;
   final int totalDuration;
+  final String themeName;
 
   const _TimerCircle({
     required this.progress,
@@ -741,80 +897,472 @@ class _TimerCircle extends StatelessWidget {
     required this.isRunning,
     required this.focusBlock,
     required this.totalDuration,
+    required this.themeName,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Animated Ring
-        TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0.0, end: progress),
-          duration: const Duration(milliseconds: 500),
-          builder: (context, value, _) => SizedBox(
-            width: 280,
-            height: 280,
-            child: CircularProgressIndicator(
-              value: 1.0 - value,
-              strokeWidth: 12,
-              backgroundColor: modeColor.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation(modeColor),
-              strokeCap: StrokeCap.round,
+    return GestureDetector(
+      onTap: () {
+        if (isRunning) {
+          focusBlock.pauseTimer();
+        } else {
+          focusBlock.startTimer();
+        }
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 1. Multi-layered Volumetric Glow
+          Container(
+            width: 260,
+            height: 260,
+            // padding: EdgeInsets.all(50),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+
+              border: Border.all(
+                color: modeColor.withValues(alpha: 0.4),
+                width: 15,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: modeColor.withOpacity(0.08),
+                  blurRadius: 100,
+                  spreadRadius: 20,
+                ),
+                BoxShadow(
+                  color: modeColor.withOpacity(0.04),
+                  blurRadius: 150,
+                  spreadRadius: 40,
+                ),
+              ],
             ),
           ),
-        ),
 
-        // Pulsing & Breathing Effect
-        if (isRunning) ...[
-          _PulsingRing(color: modeColor),
-          _BreathingCircle(color: modeColor),
-        ],
+          // 2. Base Track (Minimalist)
+          CustomPaint(
+            size: const Size(240, 240),
+            painter: _GloriousTimerPainter(
+              progress: 1.0,
+              color: modeColor.withOpacity(0.05),
+              strokeWidth: 4,
+              isTrack: true,
+              themeName: themeName,
+            ),
+          ),
 
-        // Content
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              timeStr,
-              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                fontSize: 72,
-                fontWeight: FontWeight.w900,
-                fontFeatures: [const FontFeature.tabularFigures()],
+          // 3. Animated Progress Ring
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: progress),
+            duration: const Duration(milliseconds: 1200),
+            curve: Curves.easeOutQuint,
+            builder: (context, value, _) => CustomPaint(
+              size: const Size(300, 300),
+              painter: _GloriousTimerPainter(
+                progress: value,
                 color: modeColor,
+                strokeWidth: 4,
+                themeName: themeName,
               ),
             ),
-            const SizedBox(height: 12),
-            _TimerControls(
-              focusBlock: focusBlock,
-              isRunning: isRunning,
-              totalDuration: totalDuration,
-              modeColor: modeColor,
+          ),
+
+          // 4. Subtle Inner Atmosphere
+          Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [modeColor.withOpacity(0.03), Colors.transparent],
+              ),
             ),
-          ],
-        ),
-      ],
+          ),
+
+          // Pulsing Effect
+          if (isRunning) _RippleEffect(color: modeColor),
+
+          // Theme Specific Decorator
+          _ThemeVibeDecorator(
+            themeName: themeName,
+            isRunning: isRunning,
+            color: modeColor,
+          ),
+
+          // Content Layer
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Text(
+                timeStr,
+                style: TextStyle(
+                  fontSize: 76,
+                  fontWeight: FontWeight.w800, // Bold as requested
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  color: modeColor,
+                  letterSpacing: -1,
+                  shadows: [
+                    Shadow(color: modeColor.withOpacity(0.3), blurRadius: 30),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                isRunning ? "FLOW STATE ACTIVE" : "BREATHING",
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 4,
+                  color: modeColor.withOpacity(0.5),
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _TimerControls(
+                focusBlock: focusBlock,
+                isRunning: isRunning,
+                totalDuration: totalDuration,
+                modeColor: modeColor,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _PulsingRing extends StatefulWidget {
+class _GloriousTimerPainter extends CustomPainter {
+  final double progress;
   final Color color;
-  const _PulsingRing({required this.color});
+  final double strokeWidth;
+  final bool isTrack;
+  final String themeName;
+
+  _GloriousTimerPainter({
+    required this.progress,
+    required this.color,
+    required this.strokeWidth,
+    required this.themeName,
+    this.isTrack = false,
+  });
 
   @override
-  State<_PulsingRing> createState() => _PulsingRingState();
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    if (isTrack) {
+      canvas.drawCircle(center, radius, paint);
+      return;
+    }
+
+    // Progress Arc
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    const startAngle = -math.pi / 2;
+    final sweepAngle = 2 * math.pi * progress;
+
+    // Theme-specific glow
+    if (progress > 0) {
+      final glowPaint = Paint()
+        ..color = color.withOpacity(0.3)
+        ..strokeWidth = strokeWidth + 4
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      canvas.drawArc(rect, startAngle, sweepAngle, false, glowPaint);
+    }
+
+    // Draw the main arc
+    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+
+    // --- Theme Specific Details ---
+    if (progress > 0) {
+      if (themeName == 'Sakura Zen') {
+        _paintSakuraDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Frosty Morning' || themeName == 'Snowflake') {
+        _paintFrostyDetails(
+          canvas,
+          center,
+          radius,
+          startAngle,
+          sweepAngle,
+          isDense: themeName == 'Snowflake',
+        );
+      } else if (themeName == 'Ice') {
+        _paintIceDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Indigo') {
+        _paintIndigoDetails(canvas, center, radius, startAngle, sweepAngle);
+      }
+    }
+
+    // Energy Head (Bright tip)
+    if (progress > 0 && progress < 1.0) {
+      final headAngle = startAngle + sweepAngle;
+      final headPos = Offset(
+        center.dx + radius * math.cos(headAngle),
+        center.dy + radius * math.sin(headAngle),
+      );
+
+      final headPaint = Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+      canvas.drawCircle(headPos, strokeWidth / 1.5, headPaint);
+
+      final outerHeadPaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      canvas.drawCircle(headPos, strokeWidth * 2, outerHeadPaint);
+    }
+  }
+
+  void _paintSakuraDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    // Fewer full flowers than single petals for clarity
+    final flowerCount = (sweepAngle * radius / 60).floor();
+    final flowerRadius = 8.0; // Size of each flower
+
+    for (int i = 0; i <= flowerCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / flowerCount));
+      final pos = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      // Rotate flowers slightly for organic variety
+      canvas.rotate(angle + i * 0.5);
+
+      final flowerPaint = Paint()
+        ..color = const Color(0xFFFFB7C5).withValues(alpha: 0.9)
+        ..style = PaintingStyle.fill;
+
+      // Draw 5 Petals (Based on user snippet logic)
+      for (int j = 0; j < 5; j++) {
+        double petalAngle = (j * 72) * math.pi / 180;
+        _drawDetailedPetal(
+          canvas,
+          Offset.zero,
+          flowerRadius,
+          petalAngle,
+          flowerPaint,
+        );
+      }
+
+      // Draw Flower Center (Stamen)
+      final stamenPaint = Paint()
+        ..color = Colors.yellow.shade100
+        ..style = PaintingStyle.fill
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1);
+      canvas.drawCircle(Offset.zero, 1.5, stamenPaint);
+
+      canvas.restore();
+    }
+  }
+
+  void _drawDetailedPetal(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double angle,
+    Paint paint,
+  ) {
+    final path = Path();
+    final double cosA = math.cos(angle);
+    final double sinA = math.sin(angle);
+
+    path.moveTo(center.dx, center.dy);
+
+    // Left curve
+    path.quadraticBezierTo(
+      center.dx + radius * 1.2 * math.cos(angle - 0.4),
+      center.dy + radius * 1.2 * math.sin(angle - 0.4),
+      center.dx + radius * cosA,
+      center.dy + radius * sinA,
+    );
+
+    // The Notch
+    path.lineTo(
+      center.dx + radius * 0.85 * math.cos(angle),
+      center.dy + radius * 0.85 * math.sin(angle),
+    );
+
+    // Right curve
+    path.lineTo(center.dx + radius * cosA, center.dy + radius * sinA);
+    path.quadraticBezierTo(
+      center.dx + radius * 1.2 * math.cos(angle + 0.4),
+      center.dy + radius * 1.2 * math.sin(angle + 0.4),
+      center.dx,
+      center.dy,
+    );
+
+    path.close();
+    canvas.drawPath(path, paint);
+
+    // Subtle edge highlight
+    final strokePaint = Paint()
+      ..color = Colors.white.withOpacity(0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+    canvas.drawPath(path, strokePaint);
+  }
+
+  void _paintFrostyDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle, {
+    bool isDense = false,
+  }) {
+    final crystalCount = (sweepAngle * radius / (isDense ? 25 : 40)).floor();
+    final crystalPaint = Paint()
+      ..color = Colors.white.withValues(alpha: isDense ? 0.9 : 0.8)
+      ..strokeWidth = isDense ? 0.8 : 1.0
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i <= crystalCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / crystalCount));
+      final pos = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      canvas.rotate(angle);
+
+      // Intricate Crystalline Snowflake design
+      const arms = 6;
+      const armLength = 5.0;
+      for (int j = 0; j < arms; j++) {
+        canvas.rotate(2 * math.pi / arms);
+
+        // Main branch
+        canvas.drawLine(Offset.zero, const Offset(armLength, 0), crystalPaint);
+
+        // Small side spurs (The "V" shape logic from reference image)
+        canvas.save();
+        canvas.translate(armLength * 0.6, 0);
+        canvas.rotate(math.pi / 4);
+        canvas.drawLine(Offset.zero, const Offset(2.5, 0), crystalPaint);
+        canvas.rotate(-math.pi / 2);
+        canvas.drawLine(Offset.zero, const Offset(2.5, 0), crystalPaint);
+        canvas.restore();
+      }
+
+      canvas.restore();
+    }
+  }
+
+  void _paintIceDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final shardCount = (sweepAngle * radius / 50).floor();
+    final shardPaint = Paint()
+      ..color = const Color(0xFFE0F7FA).withValues(alpha: 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    for (int i = 0; i <= shardCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / shardCount));
+      final pos = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      canvas.rotate(angle);
+
+      // Sharp Ice Shard
+      final shardPath = Path();
+      shardPath.moveTo(-2, 0);
+      shardPath.lineTo(8, -2);
+      shardPath.lineTo(12, 0);
+      shardPath.lineTo(8, 2);
+      shardPath.close();
+
+      canvas.drawPath(shardPath, shardPaint);
+      canvas.restore();
+    }
+  }
+
+  void _paintIndigoDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final pulseCount = (sweepAngle * radius / 60).floor();
+    final pulsePaint = Paint()
+      ..color = const Color(0xFF3F51B5).withValues(alpha: 0.9)
+      ..style = PaintingStyle.fill;
+
+    for (int i = 0; i <= pulseCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / pulseCount));
+      final pos = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      // Deep Indigo dots for stability
+      canvas.drawCircle(pos, 2, pulsePaint);
+      canvas.drawCircle(
+        pos,
+        5,
+        pulsePaint..color = pulsePaint.color.withOpacity(0.2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GloriousTimerPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.color != color ||
+        oldDelegate.themeName != themeName;
+  }
 }
 
-class _PulsingRingState extends State<_PulsingRing>
+class _RippleEffect extends StatefulWidget {
+  final Color color;
+  const _RippleEffect({required this.color});
+
+  @override
+  State<_RippleEffect> createState() => _RippleEffectState();
+}
+
+class _RippleEffectState extends State<_RippleEffect>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 3),
     )..repeat();
   }
 
@@ -828,19 +1376,763 @@ class _PulsingRingState extends State<_PulsingRing>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) => Container(
-        width: 280 + (40 * _controller.value),
-        height: 280 + (40 * _controller.value),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: widget.color.withOpacity(1.0 - _controller.value),
-            width: 2,
+      builder: (context, child) {
+        return CustomPaint(
+          size: const Size(600, 600),
+          painter: _RipplePainter(
+            animationValue: _controller.value,
+            color: widget.color,
           ),
-        ),
-      ),
+        );
+      },
     );
   }
+}
+
+class _RipplePainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  _RipplePainter({required this.animationValue, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final maxRadius = size.width / 2;
+    // Base radius of the timer circle is 150 (width 300 / 2)
+    const baseRadius = 150.0;
+
+    for (int i = 0; i < 3; i++) {
+      // Stagger the waves
+      final progress = (animationValue + (i * 0.4)) % 1.0;
+
+      // Only draw if outside the base circle
+      final currentRadius = baseRadius + (maxRadius - baseRadius) * progress;
+
+      // Fade out as it expands
+      double opacity = (1.0 - progress).clamp(0.0, 1.0);
+      opacity = math
+          .pow(opacity, 2.0)
+          .toDouble(); // Exponential fade for smoothness
+
+      final paint = Paint()
+        ..color = color.withOpacity(opacity * 0.15)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0; // Consistently thin for minimalism
+
+      // Draw the ring
+      canvas.drawCircle(center, currentRadius, paint);
+
+      // Optional: Add a second filled circle with very low opacity for "glow" feel
+      final glowPaint = Paint()
+        ..color = color.withOpacity(opacity * 0.05)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, currentRadius, glowPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RipplePainter oldDelegate) {
+    return animationValue != oldDelegate.animationValue ||
+        color != oldDelegate.color;
+  }
+}
+
+class _ThemeVibeDecorator extends StatelessWidget {
+  final String themeName;
+  final bool isRunning;
+  final Color color;
+
+  const _ThemeVibeDecorator({
+    required this.themeName,
+    required this.isRunning,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isRunning) return const SizedBox.shrink();
+
+    return ClipOval(
+      child: SizedBox(width: 300, height: 300, child: _buildEffect()),
+    );
+  }
+
+  Widget _buildEffect() {
+    switch (themeName) {
+      case 'Frosty Morning':
+      case 'Snowflake':
+        return const _SnowEffect();
+      case 'Ice':
+        return const _SnowEffect(); // Ice uses snow particles for now
+      case 'Indigo':
+        return const _AuroraEffect(); // Indigo uses cosmic/aurora feel
+      case 'Emerald Forest':
+      case 'Emerald Haven':
+        return _ForestEffect(color: color);
+      case 'Cherry':
+        return const _FireEffect();
+      case 'Nordic Night':
+        return const _AuroraEffect();
+      case 'Deep Sea':
+        return const _BubbleEffect(color: Colors.blueAccent);
+      case 'Light Purple':
+        return const _BubbleEffect(color: Colors.purpleAccent);
+      case 'Sakura Zen':
+        return const _SakuraEffect();
+      case 'Cyberpunk 2077':
+        return const _GlitchEffect();
+      case 'Nebula':
+      case 'Midnight Gold':
+        return const _StarfieldEffect();
+      case 'Royal Velvet':
+        return const _SparkleEffect();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+class _SnowEffect extends StatefulWidget {
+  const _SnowEffect();
+
+  @override
+  State<_SnowEffect> createState() => _SnowEffectState();
+}
+
+class _SnowEffectState extends State<_SnowEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _snowflakes = List.generate(20, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _SnowPainter(_snowflakes, _controller.value),
+        );
+      },
+    );
+  }
+}
+
+class _ForestEffect extends StatefulWidget {
+  final Color color;
+  const _ForestEffect({required this.color});
+
+  @override
+  State<_ForestEffect> createState() => _ForestEffectState();
+}
+
+class _ForestEffectState extends State<_ForestEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _leaves = List.generate(15, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 7),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _ForestPainter(_leaves, _controller.value, widget.color),
+        );
+      },
+    );
+  }
+}
+
+class _FireEffect extends StatefulWidget {
+  const _FireEffect();
+
+  @override
+  State<_FireEffect> createState() => _FireEffectState();
+}
+
+class _FireEffectState extends State<_FireEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _embers = List.generate(25, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(painter: _FirePainter(_embers, _controller.value));
+      },
+    );
+  }
+}
+
+class _Particle {
+  double x = 0;
+  double y = 0;
+  double size = 0;
+  double speed = 0;
+  double angle = 0;
+
+  _Particle() {
+    _reset();
+  }
+
+  void _reset() {
+    x = (DateTime.now().microsecondsSinceEpoch % 1000) / 1000;
+    y = (DateTime.now().microsecondsSinceEpoch % 1234) / 1234;
+    size = 2 + (DateTime.now().microsecondsSinceEpoch % 5);
+    speed = 0.5 + (DateTime.now().microsecondsSinceEpoch % 10) / 10;
+    angle = (DateTime.now().microsecondsSinceEpoch % 360) * 3.14 / 180;
+  }
+}
+
+class _SnowPainter extends CustomPainter {
+  final List<_Particle> snowflakes;
+  final double animationValue;
+
+  _SnowPainter(this.snowflakes, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white.withOpacity(0.6);
+    for (var flake in snowflakes) {
+      final yProgress = (animationValue * flake.speed + flake.y) % 1.0;
+      final xOffset = (animationValue * 0.2 + flake.x) % 1.0;
+
+      canvas.drawCircle(
+        Offset(xOffset * size.width, yProgress * size.height),
+        flake.size / 2,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _ForestPainter extends CustomPainter {
+  final List<_Particle> leaves;
+  final double animationValue;
+  final Color color;
+
+  _ForestPainter(this.leaves, this.animationValue, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color.withOpacity(0.3);
+    for (var leaf in leaves) {
+      final yProgress = (animationValue * 0.1 * leaf.speed + leaf.y) % 1.0;
+      final xOffset = (animationValue * 0.05 + leaf.x) % 1.0;
+
+      canvas.drawCircle(
+        Offset(xOffset * size.width, yProgress * size.height),
+        leaf.size,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _FirePainter extends CustomPainter {
+  final List<_Particle> embers;
+  final double animationValue;
+
+  _FirePainter(this.embers, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var ember in embers) {
+      final yProgress = 1.0 - ((animationValue * ember.speed + ember.y) % 1.0);
+      final xOffset = (ember.x + 0.1 * (animationValue - 0.5)) % 1.0;
+
+      final paint = Paint()
+        ..color = Colors.orangeAccent.withOpacity((1.0 - yProgress) * 0.8)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+
+      canvas.drawCircle(
+        Offset(xOffset * size.width, yProgress * size.height),
+        ember.size / 2,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _AuroraEffect extends StatefulWidget {
+  const _AuroraEffect();
+
+  @override
+  State<_AuroraEffect> createState() => _AuroraEffectState();
+}
+
+class _AuroraEffectState extends State<_AuroraEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(painter: _AuroraPainter(_controller.value));
+      },
+    );
+  }
+}
+
+class _AuroraPainter extends CustomPainter {
+  final double animationValue;
+  _AuroraPainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30);
+
+    for (int i = 0; i < 3; i++) {
+      final progress = (animationValue + i * 0.33) % 1.0;
+      final xOffset = size.width * (0.2 + 0.6 * progress);
+
+      final gradient = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          Colors.transparent,
+          const Color(0xFF00FFCC).withOpacity(0.3 * (1 - progress)),
+          const Color(0xFF6600FF).withOpacity(0.1 * (1 - progress)),
+          Colors.transparent,
+        ],
+      );
+
+      paint.shader = gradient.createShader(
+        Rect.fromLTWH(xOffset - 50, 0, 100, size.height),
+      );
+
+      final path = Path();
+      path.moveTo(xOffset - 100, size.height);
+      path.quadraticBezierTo(
+        xOffset + 50 * (progress - 0.5),
+        size.height / 2,
+        xOffset + 100,
+        0,
+      );
+      path.lineTo(xOffset + 150, 0);
+      path.quadraticBezierTo(
+        xOffset + 100 * progress,
+        size.height / 2,
+        xOffset - 50,
+        size.height,
+      );
+      path.close();
+
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _SakuraEffect extends StatefulWidget {
+  const _SakuraEffect();
+
+  @override
+  State<_SakuraEffect> createState() => _SakuraEffectState();
+}
+
+class _SakuraEffectState extends State<_SakuraEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _petals = List.generate(12, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) =>
+          CustomPaint(painter: _SakuraPainter(_petals, _controller.value)),
+    );
+  }
+}
+
+class _SakuraPainter extends CustomPainter {
+  final List<_Particle> petals;
+  final double animationValue;
+  _SakuraPainter(this.petals, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFFFB7C5).withOpacity(0.6);
+    for (var petal in petals) {
+      final yProgress = (animationValue * 0.4 * petal.speed + petal.y) % 1.0;
+      final xOffset =
+          (petal.x + 0.1 * math.sin(animationValue * 6.28 + petal.angle)) % 1.0;
+
+      canvas.save();
+      canvas.translate(xOffset * size.width, yProgress * size.height);
+      canvas.rotate(animationValue * 3.14 + petal.angle);
+      final petalPath = Path();
+      petalPath.addOval(Rect.fromLTWH(0, 0, petal.size, petal.size * 1.5));
+      canvas.drawPath(petalPath, paint);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _GlitchEffect extends StatefulWidget {
+  const _GlitchEffect();
+  @override
+  State<_GlitchEffect> createState() => _GlitchEffectState();
+}
+
+class _GlitchEffectState extends State<_GlitchEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) =>
+          CustomPaint(painter: _GlitchPainter(_controller.value)),
+    );
+  }
+}
+
+class _GlitchPainter extends CustomPainter {
+  final double animationValue;
+  _GlitchPainter(this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rand = animationValue;
+    if (rand > 0.8) {
+      final paint = Paint()..color = const Color(0xFFFCEE0A).withOpacity(0.2);
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height * rand, size.width, 2.0),
+        paint,
+      );
+
+      final paint2 = Paint()..color = Colors.cyanAccent.withOpacity(0.1);
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.height * (1 - rand), size.width, 10.0),
+        paint2,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _StarfieldEffect extends StatefulWidget {
+  const _StarfieldEffect();
+  @override
+  State<_StarfieldEffect> createState() => _StarfieldEffectState();
+}
+
+class _StarfieldEffectState extends State<_StarfieldEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _stars = List.generate(40, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) =>
+          CustomPaint(painter: _StarfieldPainter(_stars, _controller.value)),
+    );
+  }
+}
+
+class _StarfieldPainter extends CustomPainter {
+  final List<_Particle> stars;
+  final double animationValue;
+  _StarfieldPainter(this.stars, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    for (var star in stars) {
+      final opacity =
+          (math.sin(animationValue * 6.28 * star.speed * 5 + star.angle) +
+              1.0) /
+          2.0;
+      paint.color = Colors.white.withOpacity(opacity * 0.8);
+      canvas.drawCircle(
+        Offset(star.x * size.width, star.y * size.height),
+        star.size / 4,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _SparkleEffect extends StatefulWidget {
+  const _SparkleEffect();
+  @override
+  State<_SparkleEffect> createState() => _SparkleEffectState();
+}
+
+class _SparkleEffectState extends State<_SparkleEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _sparkles = List.generate(15, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) =>
+          CustomPaint(painter: _SparklePainter(_sparkles, _controller.value)),
+    );
+  }
+}
+
+class _SparklePainter extends CustomPainter {
+  final List<_Particle> sparkles;
+  final double animationValue;
+  _SparklePainter(this.sparkles, this.animationValue);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = const Color(0xFFFFD700);
+    for (var sparkle in sparkles) {
+      final progress = (animationValue * sparkle.speed + sparkle.y) % 1.0;
+      final opacity = math.sin(progress * 3.14);
+      paint.color = const Color(0xFFFFD700).withOpacity(opacity * 0.6);
+
+      final center = Offset(sparkle.x * size.width, sparkle.y * size.height);
+      final s = sparkle.size * opacity;
+
+      canvas.drawRect(
+        Rect.fromCenter(center: center, width: s, height: s / 4),
+        paint,
+      );
+      canvas.drawRect(
+        Rect.fromCenter(center: center, width: s / 4, height: s),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class _BubbleEffect extends StatefulWidget {
+  final Color color;
+  const _BubbleEffect({required this.color});
+
+  @override
+  State<_BubbleEffect> createState() => _BubbleEffectState();
+}
+
+class _BubbleEffectState extends State<_BubbleEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  final List<_Particle> _bubbles = List.generate(15, (i) => _Particle());
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return CustomPaint(
+          painter: _BubblePainter(_bubbles, _controller.value, widget.color),
+        );
+      },
+    );
+  }
+}
+
+class _BubblePainter extends CustomPainter {
+  final List<_Particle> bubbles;
+  final double animationValue;
+  final Color color;
+
+  _BubblePainter(this.bubbles, this.animationValue, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (var bubble in bubbles) {
+      final yProgress =
+          1.0 - ((animationValue * bubble.speed + bubble.y) % 1.0);
+      final xOffset = (bubble.x + 0.05 * (animationValue - 0.5)) % 1.0;
+
+      final paint = Paint()
+        ..color = color.withOpacity((1.0 - yProgress) * 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+
+      final fillPaint = Paint()
+        ..color = color.withOpacity((1.0 - yProgress) * 0.1)
+        ..style = PaintingStyle.fill;
+
+      final center = Offset(xOffset * size.width, yProgress * size.height);
+      canvas.drawCircle(center, bubble.size, fillPaint);
+      canvas.drawCircle(center, bubble.size, paint);
+
+      // Highlight on bubble
+      canvas.drawCircle(
+        center - Offset(bubble.size * 0.3, bubble.size * 0.3),
+        bubble.size * 0.2,
+        Paint()..color = Colors.white.withOpacity((1.0 - yProgress) * 0.4),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _TimerSettingsSheet extends StatelessWidget {
@@ -898,7 +2190,10 @@ class _TimerSettingsSheet extends StatelessWidget {
                 max: 60,
                 min: 1,
                 color: theme.colorScheme.primary,
-                onChanged: (val) => focusBlock.setDurations(focus: val.toInt()),
+                onChanged: (val) {
+                  HapticFeedback.vibrate();
+                  focusBlock.setDurations(focus: val.toInt());
+                },
               ),
               const SizedBox(height: 16),
               _DurationSlider(
@@ -907,7 +2202,10 @@ class _TimerSettingsSheet extends StatelessWidget {
                 max: 30,
                 min: 1,
                 color: Colors.teal,
-                onChanged: (val) => focusBlock.setDurations(short: val.toInt()),
+                onChanged: (val) {
+                  HapticFeedback.vibrate();
+                  focusBlock.setDurations(short: val.toInt());
+                },
               ),
               const SizedBox(height: 16),
               _DurationSlider(
@@ -917,6 +2215,74 @@ class _TimerSettingsSheet extends StatelessWidget {
                 min: 5,
                 color: Colors.blue,
                 onChanged: (val) => focusBlock.setDurations(long: val.toInt()),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                "Ambience",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _SoundSelector(focusBlock: focusBlock),
+              const SizedBox(height: 24),
+              Text(
+                "Timer Style",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: timerThemes.map((t) {
+                  final isSelected =
+                      focusBlock.timerTheme.watch(context) == t.name;
+                  return InkWell(
+                    onTap: () => focusBlock.setTimerTheme(t.name),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? t.color.withOpacity(0.15)
+                            : theme.colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected ? t.color : Colors.transparent,
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            t.icon,
+                            color: isSelected
+                                ? t.color
+                                : theme.colorScheme.onSurfaceVariant,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            t.name,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? t.color
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 24),
             ],
@@ -1199,6 +2565,251 @@ class _BreathingCircleState extends State<_BreathingCircle>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: widget.color.withOpacity(0.05),
+        ),
+      ),
+    );
+  }
+}
+
+class _SoundSelector extends StatefulWidget {
+  final FocusBlock focusBlock;
+  const _SoundSelector({required this.focusBlock});
+
+  @override
+  State<_SoundSelector> createState() => _SoundSelectorState();
+}
+
+class _SoundSelectorState extends State<_SoundSelector> {
+  bool _isPicking = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final customPath = widget.focusBlock.customSoundPath.watch(context);
+    final isLocal = widget.focusBlock.isCustomSoundLocal.watch(context);
+
+    return Column(
+      children: [
+        // 1. Theme Default Option
+        _SoundOption(
+          label: "Theme Default",
+          isSelected: customPath == null,
+          icon: Icons.auto_awesome,
+          onTap: () => widget.focusBlock.clearCustomSound(),
+        ),
+        const SizedBox(height: 8),
+
+        // 2. Local File Option
+        _SoundOption(
+          label: _isPicking
+              ? "Picking file..."
+              : (isLocal && customPath != null
+                    ? "Local: ${customPath.split('/').last}"
+                    : "Pick from Device..."),
+          isSelected: isLocal,
+          icon: _isPicking
+              ? Icons.hourglass_empty_rounded
+              : Icons.audio_file_rounded,
+          onTap: _isPicking ? () {} : () => _pickFile(context),
+        ),
+        const SizedBox(height: 8),
+
+        // 3. Built-in Preset Options (Horizontal Scroll)
+        SizedBox(
+          height: 100,
+          child: ListView(
+            physics: const BouncingScrollPhysics(),
+            scrollDirection: Axis.horizontal,
+            children: [
+              _presetOption(
+                context,
+                "Rain",
+                "sounds/rain.mp3",
+                Icons.water_drop,
+              ),
+              _presetOption(
+                context,
+                "Forest",
+                "sounds/forest_stream.mp3",
+                Icons.forest,
+              ),
+              _presetOption(context, "Lofi", "sounds/lofi.mp3", Icons.headset),
+              _presetOption(
+                context,
+                "White Noise",
+                "sounds/white_noise.mp3",
+                Icons.grain,
+              ),
+              _presetOption(
+                context,
+                "Waves",
+                "sounds/ocean_waves.mp3",
+                Icons.waves,
+              ),
+              _presetOption(
+                context,
+                "Fire",
+                "sounds/fire_crackle.mp3",
+                Icons.local_fire_department,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _presetOption(
+    BuildContext context,
+    String label,
+    String path,
+    IconData icon,
+  ) {
+    final customPath = widget.focusBlock.customSoundPath.watch(context);
+    final isSelected = customPath == path;
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: InkWell(
+        onTap: () => widget.focusBlock.setCustomSound(path),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 80,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+            border: isSelected
+                ? Border.all(color: theme.colorScheme.primary, width: 2)
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFile(BuildContext context) async {
+    if (_isPicking) return;
+
+    setState(() {
+      _isPicking = true;
+    });
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'aac', 'flac'],
+      );
+      if (result != null && result.files.single.path != null) {
+        widget.focusBlock.setCustomSound(
+          result.files.single.path!,
+          isLocal: true,
+        );
+      }
+    } catch (e) {
+      if (e is! UnimplementedError) {
+        debugPrint("File picker error: $e");
+      }
+      // Handle error or permission denial
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error picking file: $e")));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPicking = false;
+        });
+      }
+    }
+  }
+}
+
+class _SoundOption extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SoundOption({
+    required this.label,
+    required this.isSelected,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHigh,
+          borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? Border.all(color: theme.colorScheme.primary)
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: theme.colorScheme.primary,
+                size: 18,
+              ),
+          ],
         ),
       ),
     );

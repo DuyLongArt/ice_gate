@@ -560,6 +560,21 @@ class ThemeTable extends Table {
   TextColumn get themePath => text()();
 }
 
+@DataClassName('CustomNotificationData')
+class CustomNotificationsTable extends Table {
+  IntColumn get notificationID => integer().autoIncrement()();
+  TextColumn get title => text().withLength(min: 1, max: 200)();
+  TextColumn get content => text()();
+  DateTimeColumn get scheduledTime => dateTime()();
+  TextColumn get repeatFrequency => text().withDefault(
+    const Constant('none'),
+  )(); // none, hourly, daily, weekly
+  TextColumn get repeatDays =>
+      text().nullable()(); // Comma-separated: 1,3,5 (Mon, Wed, Fri)
+  BoolColumn get isEnabled => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DriftAccessor(tables: [ThemeTable])
 class ThemeDAO extends DatabaseAccessor<AppDatabase> with _$ThemeDAOMixin {
   ThemeDAO(super.db);
@@ -1640,6 +1655,69 @@ class FocusSessionsDAO extends DatabaseAccessor<AppDatabase>
   }
 }
 
+@DataClassName('QuoteData')
+class QuotesTable extends Table {
+  IntColumn get quoteID => integer().autoIncrement()();
+  TextColumn get content => text()();
+  TextColumn get author => text().nullable()();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DriftAccessor(tables: [QuotesTable])
+class QuoteDAO extends DatabaseAccessor<AppDatabase> with _$QuoteDAOMixin {
+  QuoteDAO(super.db);
+
+  Future<int> insertQuote(QuotesTableCompanion entry) =>
+      into(quotesTable).insert(entry);
+
+  Future<bool> updateQuote(QuoteData entry) =>
+      update(quotesTable).replace(entry);
+
+  Future<int> deleteQuote(int id) =>
+      (delete(quotesTable)..where((t) => t.quoteID.equals(id))).go();
+
+  Future<List<QuoteData>> getAllQuotes() => select(quotesTable).get();
+
+  Stream<List<QuoteData>> watchActiveQuotes() {
+    return (select(quotesTable)..where((t) => t.isActive.equals(true))).watch();
+  }
+}
+
+@DriftAccessor(tables: [CustomNotificationsTable])
+class CustomNotificationDAO extends DatabaseAccessor<AppDatabase>
+    with _$CustomNotificationDAOMixin {
+  CustomNotificationDAO(super.db);
+
+  Future<int> insertNotification(CustomNotificationsTableCompanion entry) {
+    return into(customNotificationsTable).insert(entry);
+  }
+
+  Future<bool> updateNotification(CustomNotificationData entry) {
+    return update(customNotificationsTable).replace(entry);
+  }
+
+  Future<int> deleteNotification(int id) {
+    return (delete(
+      customNotificationsTable,
+    )..where((t) => t.notificationID.equals(id))).go();
+  }
+
+  Stream<List<CustomNotificationData>> watchAllNotifications() {
+    return (select(customNotificationsTable)..orderBy([
+          (t) =>
+              OrderingTerm(expression: t.scheduledTime, mode: OrderingMode.asc),
+        ]))
+        .watch();
+  }
+
+  Future<List<CustomNotificationData>> getAllEnabledNotifications() {
+    return (select(
+      customNotificationsTable,
+    )..where((t) => t.isEnabled.equals(true))).get();
+  }
+}
+
 // --- 6. Main Database Class ---
 
 @DriftDatabase(
@@ -1669,6 +1747,8 @@ class FocusSessionsDAO extends DatabaseAccessor<AppDatabase>
     ProjectsTable,
     TransactionsTable,
     FocusSessionsTable,
+    CustomNotificationsTable,
+    QuotesTable,
   ],
   daos: [
     ThemesTableDAO,
@@ -1689,13 +1769,23 @@ class FocusSessionsDAO extends DatabaseAccessor<AppDatabase>
     ScoreDAO,
     ThemeDAO,
     FocusSessionsDAO,
+    CustomNotificationDAO,
+    QuoteDAO,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 16; // Increment schema version
+  int get schemaVersion => 18; // Increment schema version
+
+  Future<void> clearAllData() async {
+    await transaction(() async {
+      for (final table in allTables) {
+        await delete(table).go();
+      }
+    });
+  }
 
   // Migration strategy would be needed here for a real app update
   @override
@@ -1824,6 +1914,22 @@ class AppDatabase extends _$AppDatabase {
           } catch (e) {
             print('Error adding project_i_d column to transactions_table: $e');
           }
+        }
+        if (from < 17) {
+          await m.createTable(customNotificationsTable);
+        }
+        if (from < 18) {
+          await m.createTable(quotesTable);
+          try {
+            await customStatement(
+              "ALTER TABLE custom_notifications_table ADD COLUMN repeat_frequency TEXT DEFAULT 'none';",
+            );
+          } catch (_) {}
+          try {
+            await customStatement(
+              "ALTER TABLE custom_notifications_table ADD COLUMN repeat_days TEXT;",
+            );
+          } catch (_) {}
         }
       },
       beforeOpen: (details) async {

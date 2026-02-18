@@ -11,6 +11,8 @@ import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:ice_shield/initial_layer/FocusAudioHandler.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,10 +20,23 @@ void main() async {
   late final AppDatabase database = AppDatabase();
 
   final notificationService = LocalNotificationService();
-  await notificationService.init();
+  await notificationService.init(database);
+
+  final audioHandler = await AudioService.init(
+    builder: () => FocusAudioHandler(),
+    config: const AudioServiceConfig(
+      androidNotificationChannelId: 'com.duylong.ice_shield.channel.audio',
+      androidNotificationChannelName: 'Focus Audio Playback',
+      androidNotificationOngoing: true,
+    ),
+  );
+
   runApp(
-    Provider<LocalNotificationService>.value(
-      value: notificationService,
+    MultiProvider(
+      providers: [
+        Provider<LocalNotificationService>.value(value: notificationService),
+        Provider<FocusAudioHandler>.value(value: audioHandler),
+      ],
       child: DataLayer(
         database: database,
         childWidget: ThemeLayer(
@@ -66,7 +81,7 @@ class MyApp extends StatelessWidget {
           // You might have a separate darkTheme and themeMode in the store
           // darkTheme: themeStore.darkMaterialTheme,
           // themeMode: themeStore.currentThemeMode,
-          title: 'ICE Shield', // Standard MaterialApp title
+          title: 'ICE Gate', // Standard MaterialApp title
           // home: HomePage(title: 'Home Page'),
         );
       },

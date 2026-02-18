@@ -63,7 +63,10 @@ class _MealDialogContent extends StatefulWidget {
 
 class _MealDialogContentState extends State<_MealDialogContent> {
   final _foodController = TextEditingController();
-  final _caloriesController = TextEditingController();
+  final _proteinController = TextEditingController();
+  final _carbsController = TextEditingController();
+  final _fatController = TextEditingController();
+  final _kcalController = TextEditingController();
   File? _pickedImage;
   String _imagePath = "";
   bool _isAnalyzing = false;
@@ -71,7 +74,10 @@ class _MealDialogContentState extends State<_MealDialogContent> {
   @override
   void dispose() {
     _foodController.dispose();
-    _caloriesController.dispose();
+    _proteinController.dispose();
+    _carbsController.dispose();
+    _fatController.dispose();
+    _kcalController.dispose();
     super.dispose();
   }
 
@@ -115,8 +121,10 @@ class _MealDialogContentState extends State<_MealDialogContent> {
 
       if (mounted) {
         setState(() {
-          _caloriesController.text =
-              "${result.carbs}|${result.protein}|${result.fat}|${result.calories}";
+          _proteinController.text = result.protein.toStringAsFixed(1);
+          _carbsController.text = result.carbs.toStringAsFixed(1);
+          _fatController.text = result.fat.toStringAsFixed(1);
+          _kcalController.text = result.calories.toStringAsFixed(0);
           _isAnalyzing = false;
         });
       }
@@ -127,40 +135,35 @@ class _MealDialogContentState extends State<_MealDialogContent> {
   }
 
   Future<void> _addMeal() async {
-    if (_caloriesController.text.isNotEmpty) {
-      final energy = _caloriesController.text.split("|");
-      final carbs = double.tryParse(energy[0]) ?? 0.0;
-      final protein = double.tryParse(energy[1]) ?? 0.0;
-      final fat = double.tryParse(energy[2]) ?? 0.0;
-      final calories = double.tryParse(energy[3]) ?? 0.0;
+    final protein = double.tryParse(_proteinController.text) ?? 0.0;
+    final carbs = double.tryParse(_carbsController.text) ?? 0.0;
+    final fat = double.tryParse(_fatController.text) ?? 0.0;
+    final calories = double.tryParse(_kcalController.text) ?? 0.0;
 
-      final now = DateTime.now();
+    final now = DateTime.now();
 
-      await widget.healthMealDAO.insertMeal(
-        MealsTableCompanion.insert(
-          mealName: _foodController.text.isEmpty
-              ? "Meal"
-              : _foodController.text,
-          mealImageUrl: Value(_imagePath),
-          carbs: Value(carbs),
-          protein: Value(protein),
-          fat: Value(fat),
-          calories: Value(calories),
-          eatenAt: Value(now),
-        ),
-      );
+    await widget.healthMealDAO.insertMeal(
+      MealsTableCompanion.insert(
+        mealName: _foodController.text.isEmpty ? "Meal" : _foodController.text,
+        mealImageUrl: Value(_imagePath),
+        carbs: Value(carbs),
+        protein: Value(protein),
+        fat: Value(fat),
+        calories: Value(calories),
+        eatenAt: Value(now),
+      ),
+    );
 
-      await widget.healthMealDAO.insertDay(
-        DaysTableCompanion.insert(
-          dayID: now,
-          caloriesOut: const Value(0),
-          weight: const Value(0),
-        ),
-      );
+    await widget.healthMealDAO.insertDay(
+      DaysTableCompanion.insert(
+        dayID: now,
+        caloriesOut: const Value(0),
+        weight: const Value(0),
+      ),
+    );
 
-      if (mounted) {
-        context.go('/health/food');
-      }
+    if (mounted) {
+      context.go('/health/food');
     }
   }
 
@@ -172,65 +175,82 @@ class _MealDialogContentState extends State<_MealDialogContent> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            GestureDetector(
-              onTap: () async {
-                await showModalBottomSheet(
-                  context: context,
-                  builder: (bottomSheetContext) => SafeArea(
-                    child: Wrap(
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.photo_library),
-                          title: const Text('Gallery'),
-                          onTap: () {
-                            _pickImage(ImageSource.gallery);
-                            Navigator.pop(bottomSheetContext);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.photo_camera),
-                          title: const Text('Camera'),
-                          onTap: () {
-                            _pickImage(ImageSource.camera);
-                            
-                            Navigator.pop(bottomSheetContext);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-              child: Container(
+            if (_pickedImage != null)
+              Container(
                 height: 150,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: _pickedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(_pickedImage!, fit: BoxFit.cover),
-                      )
-                    : const Icon(Icons.add_a_photo, size: 40),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(_pickedImage!, fit: BoxFit.cover),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _pickImage(ImageSource.camera),
+                      child: _buildCaptureButton(
+                        Icons.camera_alt,
+                        "Camera",
+                        Colors.blue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _pickImage(ImageSource.gallery),
+                      child: _buildCaptureButton(
+                        Icons.photo_library,
+                        "Gallery",
+                        Colors.purple,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
             const SizedBox(height: 16),
             TextField(
               controller: _foodController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Food Name',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.restaurant_menu),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.auto_awesome),
+                  onPressed: _analyzeFood,
+                  tooltip: 'Analyze Food',
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onEditingComplete: _analyzeFood,
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _buildMacroField('Protein', _proteinController, Colors.orange),
+                const SizedBox(width: 8),
+                _buildMacroField('Carbs', _carbsController, Colors.blue),
+                const SizedBox(width: 8),
+                _buildMacroField('Fat', _fatController, Colors.pink),
+              ],
+            ),
             const SizedBox(height: 12),
             TextField(
-              controller: _caloriesController,
+              controller: _kcalController,
+              keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Energy (P|C|F|Kcal)',
-                border: const OutlineInputBorder(),
+                labelText: 'Total Kcal',
+                prefixIcon: const Icon(Icons.local_fire_department),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 suffixIcon: _isAnalyzing
                     ? const Padding(
                         padding: EdgeInsets.all(12.0),
@@ -240,13 +260,8 @@ class _MealDialogContentState extends State<_MealDialogContent> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       )
-                    : IconButton(
-                        icon: const Icon(Icons.auto_awesome),
-                        onPressed: _analyzeFood,
-                        tooltip: 'Analyze Food',
-                      ),
+                    : null,
               ),
-              keyboardType: TextInputType.text,
             ),
           ],
         ),
@@ -264,6 +279,62 @@ class _MealDialogContentState extends State<_MealDialogContent> {
           child: const Text('Add'),
         ),
       ],
+    );
+  }
+
+  Widget _buildMacroField(
+    String label,
+    TextEditingController controller,
+    Color color,
+  ) {
+    return Expanded(
+      child: TextField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: color, fontSize: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 12,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: color.withOpacity(0.5)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: color.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: color, width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCaptureButton(IconData icon, String label, Color color) {
+    return Container(
+      height: 100,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.5)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -334,10 +405,17 @@ class _FoodDashboardPageState extends State<FoodDashboardPage> {
                 backgroundColor: colorScheme.surface,
                 title: Text(
                   'Nutrition',
-                  style: TextStyle(fontWeight: FontWeight.w900,color: colorScheme.onSurface),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 leading: IconButton(
-                  icon: Icon(Icons.arrow_back_ios_new, size: 20,color: colorScheme.onSurface),
+                  icon: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 20,
+                    color: colorScheme.onSurface,
+                  ),
                   onPressed: () => Navigator.pop(context),
                 ),
               ),

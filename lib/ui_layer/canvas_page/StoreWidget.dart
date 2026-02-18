@@ -123,13 +123,16 @@ class StoreWidget extends StatelessWidget {
 
   String _getColorHex(String name) {
     final lower = name.toLowerCase();
-    if (lower.contains('health') || lower.contains('heart'))
+    if (lower.contains('health') || lower.contains('heart')) {
       return "0xFFE91E63";
-    if (lower.contains('finance') || lower.contains('money'))
+    }
+    if (lower.contains('finance') || lower.contains('money')) {
       return "0xFF4CAF50";
+    }
     if (lower.contains('social') || lower.contains('chat')) return "0xFF2196F3";
-    if (lower.contains('calendar') || lower.contains('date'))
+    if (lower.contains('calendar') || lower.contains('date')) {
       return "0xFFFF9800";
+    }
     if (lower.contains('weather')) return "0xFFFFC107";
     if (lower.contains('ui') || lower.contains('design')) return "0xFF9C27B0";
     return "0xFF607D8B";

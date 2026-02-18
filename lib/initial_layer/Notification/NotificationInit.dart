@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:signals/signals.dart';
 
 import 'package:timezone/data/latest.dart' as tz;
@@ -13,7 +14,10 @@ class LocalNotificationService {
   /// Whether notifications are currently enabled
   final notificationsEnabled = signal<bool>(true);
 
-  Future<void> init() async {
+  AppDatabase? _database;
+
+  Future<void> init([AppDatabase? database]) async {
+    _database = database;
     // Initialize Timezones
     try {
       tz.initializeTimeZones();
@@ -76,15 +80,15 @@ class LocalNotificationService {
       },
     );
 
-    // Schedule daily briefing
-    await scheduleDailyNotification();
+    // Schedule daily briefing and custom notifications
+    await syncAllNotifications();
   }
 
   /// Toggle notifications on or off
   Future<void> setNotificationsEnabled(bool enabled) async {
     notificationsEnabled.value = enabled;
     if (enabled) {
-      await scheduleDailyNotification();
+      await syncAllNotifications();
       print('🔔 Notifications enabled');
     } else {
       await cancelAllNotifications();
@@ -97,13 +101,32 @@ class LocalNotificationService {
     await _notificationsPlugin.cancelAll();
   }
 
+  /// Sync all notifications (daily + custom from DB)
+  Future<void> syncAllNotifications() async {
+    if (!notificationsEnabled.value) return;
+
+    // Daily notification
+    await scheduleDailyNotification();
+
+    // Custom notifications from database
+    if (_database != null) {
+      final customNotifications = await _database!.customNotificationDAO
+          .getAllEnabledNotifications();
+      for (final notification in customNotifications) {
+        await scheduleCustomNotification(notification);
+      }
+    }
+  }
+
   Future<void> scheduleDailyNotification() async {
     if (!notificationsEnabled.value) return;
+
+    final quote = await _getRandomQuote();
 
     await _notificationsPlugin.zonedSchedule(
       id: 888,
       title: 'Good Morning! ☀️',
-      body: 'Check your widgets for today\'s updates.',
+      body: quote,
       scheduledDate: _nextInstanceOfSevenAM(),
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -121,6 +144,129 @@ class LocalNotificationService {
     );
   }
 
+  Future<void> scheduleCustomNotification(CustomNotificationData data) async {
+    if (!notificationsEnabled.value || !data.isEnabled) return;
+
+    final now = tz.TZDateTime.now(tz.local);
+    final scheduledDate = tz.TZDateTime.from(data.scheduledTime, tz.local);
+    DateTimeComponents? matchComponents;
+
+    switch (data.repeatFrequency) {
+      case 'daily':
+        matchComponents = DateTimeComponents.time;
+        break;
+      case 'weekly':
+        matchComponents = DateTimeComponents.dayOfWeekAndTime;
+        break;
+      default:
+        matchComponents = null;
+    }
+
+    // Guard: If it's a one-time notification and it's in the past, skip it.
+    if (matchComponents == null && scheduledDate.isBefore(now)) {
+      print('Skipping past one-time notification: ${data.title}');
+      return;
+    }
+
+    // For weekly, we might need multiple schedules if multiple days are selected
+    if (data.repeatFrequency == 'weekly' &&
+        data.repeatDays != null &&
+        data.repeatDays!.isNotEmpty) {
+      final selectedDays = data.repeatDays!
+          .split(',')
+          .map((e) => int.parse(e))
+          .toList();
+      for (final day in selectedDays) {
+        // We need a unique ID for each day of the weekly repeat
+        // Using notificationID + day offset to keep it unique but related
+        final dayId =
+            data.notificationID * 100 + day; // Using 100 to avoid overlap
+        await _notificationsPlugin.zonedSchedule(
+          id: dayId,
+          title: data.title,
+          body: data.content,
+          scheduledDate: _nextInstanceOfDay(data.scheduledTime, day),
+          notificationDetails: _customNotificationDetails(),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
+    } else {
+      await _notificationsPlugin.zonedSchedule(
+        id: data.notificationID,
+        title: data.title,
+        body: data.content,
+        scheduledDate: matchComponents != null
+            ? _nextInstanceOfTime(data.scheduledTime)
+            : scheduledDate,
+        notificationDetails: _customNotificationDetails(),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: matchComponents,
+      );
+    }
+  }
+
+  Future<String> _getRandomQuote() async {
+    if (_database != null) {
+      final quotes = await _database!.quoteDAO.getAllQuotes();
+      final activeQuotes = quotes.where((q) => q.isActive).toList();
+      if (activeQuotes.isNotEmpty) {
+        final quote = activeQuotes[DateTime.now().day % activeQuotes.length];
+        return "${quote.content} ${quote.author != null ? '- ${quote.author}' : ''}";
+      }
+    }
+
+    // Default Fallback Quotes
+    final defaultQuotes = [
+      "The only way to do great work is to love what you do.",
+      "Innovation distinguishes between a leader and a follower.",
+      "Stay hungry, stay foolish.",
+      "Your time is limited, don't waste it living someone else's life.",
+      "Design is not just what it looks like and feels like. Design is how it works.",
+    ];
+    return defaultQuotes[DateTime.now().day % defaultQuotes.length];
+  }
+
+  NotificationDetails _customNotificationDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'custom_channel',
+        'Custom Notifications',
+        channelDescription: 'User scheduled notifications',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+    );
+  }
+
+  tz.TZDateTime _nextInstanceOfTime(DateTime time) {
+    final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    tz.TZDateTime scheduledDate = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      time.hour,
+      time.minute,
+    );
+    // If scheduled date is now OR in the past, move to the next day
+    if (!scheduledDate.isAfter(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
+  tz.TZDateTime _nextInstanceOfDay(DateTime time, int dayOfWeek) {
+    tz.TZDateTime scheduledDate = _nextInstanceOfTime(time);
+    // Convert Monday=1, Sunday=7 (Dart/TZDateTime)
+    while (scheduledDate.weekday != dayOfWeek) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    return scheduledDate;
+  }
+
   tz.TZDateTime _nextInstanceOfSevenAM() {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
@@ -130,7 +276,8 @@ class LocalNotificationService {
       now.day,
       7,
     );
-    if (scheduledDate.isBefore(now)) {
+    // If scheduled date is now OR in the past, move to the next day
+    if (!scheduledDate.isAfter(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;

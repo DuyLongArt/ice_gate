@@ -1,7 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-// import 'package:ice_shield/ui_layer/health_page/Input/CameraFoodImport.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:ice_shield/ui_layer/health_page/Input/CameraFoodImport.dart';
+
+import 'package:ice_shield/ui_layer/health_page/subpage/LidarFoodScanner.dart';
+import 'package:ice_shield/ui_layer/health_page/widgets/AddFoodModal.dart';
 
 class CaloriesPage extends StatefulWidget {
   const CaloriesPage({super.key});
@@ -25,18 +26,11 @@ class _CaloriesCardState extends State<CaloriesPage> {
   final int fatGoal = 70; // grams
 
   final TextEditingController _caloriesController = TextEditingController();
-  final TextEditingController _foodController = TextEditingController();
-  final TextEditingController _proteinController = TextEditingController();
-  final TextEditingController _carbsController = TextEditingController();
-  final TextEditingController _fatController = TextEditingController();
+  // _foodController, _proteinController, etc removed as they are now in the modal
 
   @override
   void dispose() {
     _caloriesController.dispose();
-    _foodController.dispose();
-    _proteinController.dispose();
-    _carbsController.dispose();
-    _fatController.dispose();
     super.dispose();
   }
 
@@ -59,25 +53,43 @@ class _CaloriesCardState extends State<CaloriesPage> {
     return Colors.red;
   }
 
-  void _addFood() {
-    final calories = int.tryParse(_caloriesController.text);
-    final proteinAmount = int.tryParse(_proteinController.text) ?? 0;
-    final carbsAmount = int.tryParse(_carbsController.text) ?? 0;
-    final fatAmount = int.tryParse(_fatController.text) ?? 0;
+  void _onFoodAdded(Map<String, dynamic> data) {
+    setState(() {
+      // Data from modal is: {name, calories, protein, carbs, fat, image}
+      // We can use the image if needed, for now just adding macros
+      final cal = data['calories'] as int? ?? 0;
+      final p = data['protein'] as int? ?? 0;
+      final c = data['carbs'] as int? ?? 0;
+      final f = data['fat'] as int? ?? 0;
 
-    if (calories != null && calories > 0) {
-      setState(() {
-        caloriesConsumed += calories;
-        protein += proteinAmount;
-        carbs += carbsAmount;
-        fat += fatAmount;
-        _caloriesController.clear();
-        _foodController.clear();
-        _proteinController.clear();
-        _carbsController.clear();
-        _fatController.clear();
-      });
-    }
+      if (cal > 0) {
+        caloriesConsumed += cal;
+        protein += p;
+        carbs += c;
+        fat += f;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Added ${data['name']} ($cal kcal)'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    });
+  }
+
+  void _showAddFoodModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: AddFoodModal(onAdd: _onFoodAdded),
+      ),
+    );
   }
 
   void _addExercise() {
@@ -90,30 +102,30 @@ class _CaloriesCardState extends State<CaloriesPage> {
     }
   }
 
-  /// Open camera to take food photo
-  Future<void> _openCamera() async {
-    final XFile? result = await Navigator.push<XFile>(
-      context,
-      MaterialPageRoute(builder: (context) => const CameraFoodImport()),
-    );
-
-    if (result != null) {
-      // Image was captured/selected
+  /// Open LiDAR scanner for food volume estimation
+  Future<void> _openLidarScanner() async {
+    if (!Platform.isIOS) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(child: Text('Photo captured! Add food details below.')),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+        const SnackBar(
+          content: Text('LiDAR scanning is only available on iOS devices.'),
+          backgroundColor: Colors.orange,
         ),
       );
-      // TODO: In future, integrate with food recognition API
-      // For now, just show success message
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LidarFoodScanner()),
+    );
+
+    if (result == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('LiDAR scan completed! Processing volume data...'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -141,7 +153,7 @@ class _CaloriesCardState extends State<CaloriesPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Main Calorie Display Card
+            // ... Main Card ... (keep existing)
             Card(
               elevation: 8.0,
               shape: RoundedRectangleBorder(
@@ -280,142 +292,41 @@ class _CaloriesCardState extends State<CaloriesPage> {
             ),
             const SizedBox(height: 24),
 
-            // Add Food Section
-            Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Log Food',
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+            // Actions Section
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showAddFoodModal,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Food'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    // Camera button
-                    OutlinedButton.icon(
-                      onPressed: _openCamera,
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Take Food Photo'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: _foodController,
-                      decoration: InputDecoration(
-                        labelText: 'Food name',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        prefixIcon: const Icon(Icons.fastfood),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _caloriesController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Calories',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              prefixIcon: const Icon(Icons.calculate),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _addFood,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.all(16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Icon(Icons.add),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Macronutrient inputs
-                    Text(
-                      'Macronutrients (optional)',
-                      style: textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _proteinController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Protein (g)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              prefixIcon: Icon(Icons.egg, color: Colors.red),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _carbsController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Carbs (g)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.grain,
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _fatController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Fat (g)',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.water_drop,
-                                color: Colors.purple,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _openLidarScanner,
+                    icon: const Icon(Icons.qr_code_scanner),
+                    label: const Text('LiDAR Scan'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      foregroundColor: Colors.purple,
+                      side: const BorderSide(color: Colors.purple),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -471,6 +382,9 @@ class _CaloriesCardState extends State<CaloriesPage> {
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+
+            // ... Quick Add ... (keep existing)
             const SizedBox(height: 20),
 
             // Quick Add Exercises

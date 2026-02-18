@@ -168,46 +168,58 @@ class InternalWidgetProtocol implements PluginProtocol {
         lower.startsWith('ui ') ||
         lower.endsWith(' ui') ||
         lower.contains('user interface') ||
-        lower.contains('design'))
+        lower.contains('design')) {
       return Icons.design_services;
+    }
 
     if (lower.contains('health') ||
         lower.contains('heart') ||
-        lower.contains('fit'))
+        lower.contains('fit')) {
       return Icons.favorite;
+    }
     if (lower.contains('finance') ||
         lower.contains('money') ||
         lower.contains('wallet') ||
-        lower.contains('bank'))
+        lower.contains('bank')) {
       return Icons.account_balance_wallet;
+    }
     if (lower.contains('social') ||
         lower.contains('chat') ||
-        lower.contains('friend'))
+        lower.contains('friend')) {
       return Icons.people;
+    }
     if (lower.contains('calendar') ||
         lower.contains('schedule') ||
-        lower.contains('date'))
+        lower.contains('date')) {
       return Icons.calendar_month;
+    }
     if (lower.contains('map') ||
         lower.contains('gps') ||
-        lower.contains('location'))
+        lower.contains('location')) {
       return Icons.map;
+    }
     if (lower.contains('music') ||
         lower.contains('song') ||
-        lower.contains('audio'))
+        lower.contains('audio')) {
       return Icons.music_note;
+    }
     if (lower.contains('weather') ||
         lower.contains('forecast') ||
-        lower.contains('sun'))
+        lower.contains('sun')) {
       return Icons.wb_sunny;
-    if (lower.contains('widget') || lower.contains('component'))
+    }
+    if (lower.contains('widget') || lower.contains('component')) {
       return Icons.widgets;
-    if (lower.contains('setting') || lower.contains('config'))
+    }
+    if (lower.contains('setting') || lower.contains('config')) {
       return Icons.settings;
-    if (lower.contains('news') || lower.contains('article'))
+    }
+    if (lower.contains('news') || lower.contains('article')) {
       return Icons.newspaper;
-    if (lower.contains('shop') || lower.contains('cart'))
+    }
+    if (lower.contains('shop') || lower.contains('cart')) {
       return Icons.shopping_cart;
+    }
     if (lower.contains('video') || lower.contains('movie')) return Icons.movie;
 
     return Icons.dashboard_customize; // Default fallback

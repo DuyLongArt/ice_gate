@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:ice_shield/ui_layer/user_page/main_deparment/ProfileHeader.dart';
@@ -133,7 +132,7 @@ class ProfileDashboardPage extends StatelessWidget {
         appBar: AppBar(
           title: // Wrap your Text in AutoSizeText
           AutoSizeText(
-            'Life Dashboard',
+            'Things in life',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
@@ -153,13 +152,12 @@ class ProfileDashboardPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Profile Header
-              ProfileHeader(profile: profile),
-
+              // ProfileHeader(profile: profile),
               const SizedBox(height: 24),
 
               // Section Title
               Text(
-                'Life Dashboard',
+                'Things in life',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -213,20 +211,119 @@ class ProfileDashboardPage extends StatelessWidget {
 
               const SizedBox(height: 32),
 
-              // --- SECTION: SETTINGS ---
+              const SizedBox(height: 32),
+
+              // --- SECTION: ANALYSIS ---
               Text(
-                'Settings',
+                'Analysis',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
-              _buildNotificationToggle(context, colorScheme),
+              _buildAnalysisSection(context, colorScheme),
             ],
           ),
         ),
       );
     });
+  }
+
+  Widget _buildAnalysisSection(BuildContext context, ColorScheme colorScheme) {
+    return Column(
+      children: [
+        _buildAnalysisCard(
+          context,
+          title: "Productivity Trend",
+          subtitle: "+15% from last week",
+          icon: Icons.trending_up_rounded,
+          color: Colors.green,
+          content: Container(
+            height: 100,
+            alignment: Alignment.center,
+            child: Text(
+              "Chart Placeholder",
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildAnalysisCard(
+          context,
+          title: "Focus Distribution",
+          subtitle: "Mostly Deep Work",
+          icon: Icons.pie_chart_rounded,
+          color: Colors.blue,
+          content: Container(
+            height: 100,
+            alignment: Alignment.center,
+            child: Text(
+              "Pie Chart Placeholder",
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalysisCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required Widget content,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          content,
+        ],
+      ),
+    );
   }
 
   Stream<FinanceMetrics> _getFinanceStream(BuildContext context, int personID) {
@@ -258,10 +355,11 @@ class ProfileDashboardPage extends StatelessWidget {
           expense += tx.amount;
         } else {
           // Fallback based on sign if type is ambiguous
-          if (tx.amount > 0)
+          if (tx.amount > 0) {
             income += tx.amount;
-          else
+          } else {
             expense += tx.amount.abs();
+          }
         }
       }
 
@@ -275,62 +373,6 @@ class ProfileDashboardPage extends StatelessWidget {
         monthlyIncome: income,
         monthlyExpenses: expense,
         savingsRate: savingsRate,
-      );
-    });
-  }
-
-  Widget _buildNotificationToggle(
-    BuildContext context,
-    ColorScheme colorScheme,
-  ) {
-    final notificationService = context.read<LocalNotificationService>();
-    return Watch((context) {
-      final enabled = notificationService.notificationsEnabled.value;
-      return Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-        ),
-        child: SwitchListTile.adaptive(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 4,
-          ),
-          secondary: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: enabled
-                  ? Colors.amber.withOpacity(0.15)
-                  : colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              enabled
-                  ? Icons.notifications_active_rounded
-                  : Icons.notifications_off_rounded,
-              color: enabled ? Colors.amber : colorScheme.onSurfaceVariant,
-              size: 24,
-            ),
-          ),
-          title: Text(
-            'Notifications',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          subtitle: Text(
-            enabled ? 'Daily 7 AM briefing active' : 'All notifications off',
-            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
-          ),
-          value: enabled,
-          activeColor: Colors.amber,
-          onChanged: (value) async {
-            await notificationService.setNotificationsEnabled(value);
-          },
-        ),
       );
     });
   }

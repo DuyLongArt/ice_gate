@@ -75,6 +75,12 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^5.0.1
   flutter_local_notifications: ^20.1.0
+  arkit_plugin: ^1.0.6
+  vector_math: ^2.1.4
+  audioplayers: ^6.5.1
+  file_picker: ^10.3.10
+  audio_service: ^0.18.18
+  live_activities: ^2.4.3
 
 dev_dependencies:
   flutter_test:

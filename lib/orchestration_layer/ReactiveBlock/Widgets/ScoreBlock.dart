@@ -134,7 +134,9 @@ class ScoreBlock {
       double totalNetWorth = 0;
       double investmentPoints = 0;
 
-      for (var acc in accounts) totalNetWorth += acc.balance;
+      for (var acc in accounts) {
+        totalNetWorth += acc.balance;
+      }
 
       for (var asset in assets) {
         final currentVal = asset.currentEstimatedValue ?? 0.0;
@@ -171,7 +173,9 @@ class ScoreBlock {
     try {
       final contacts = await _personDAO.getAllContacts().first;
       int totalAffection = 0;
-      for (var c in contacts) totalAffection += c.affection;
+      for (var c in contacts) {
+        totalAffection += c.affection;
+      }
       final socialScore =
           (contacts.length * CONTACT_POINTS).toDouble() +
           ((totalAffection ~/ AFFECTION_PER_UNIT) * AFFECTION_POINTS)
@@ -226,7 +230,9 @@ class ScoreBlock {
   }
 
   void dispose() {
-    for (var s in _subscriptions) s.cancel();
+    for (var s in _subscriptions) {
+      s.cancel();
+    }
     _score.dispose();
   }
 }

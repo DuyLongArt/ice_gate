@@ -1,4 +1,4 @@
-# 📊 ICE Shield - Point & Level System
+# 📊 ICE Gate - Point & Level System
 
 ## Level Requirements
 | Level | Points Required |

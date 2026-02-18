@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────
-// 📊 ICE Shield — Global Point Constants
+// 📊 ICE Gate — Global Point Constants
 // ─────────────────────────────────────────────────
 // Edit these to tune the entire scoring system.
 

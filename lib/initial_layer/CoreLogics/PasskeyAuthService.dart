@@ -41,7 +41,7 @@ class PasskeyAuthService {
       final registrationOptions = {
         "challenge": challenge,
         "rp": {
-          "name": "Ice Shield",
+          "name": "ICE Gate",
           "id": "auth.duylong.art", // MUST match Associated Domains
         },
         "user": {
@@ -67,9 +67,7 @@ class PasskeyAuthService {
       _logger.info('Starting passkey registration with options: $optionsJson');
 
       // 2. Invoke the platform passkey creation
-      final String result = await _flutterPasskey.createCredential(
-        optionsJson,
-      );
+      final String result = await _flutterPasskey.createCredential(optionsJson);
 
       _logger.info('Passkey registration result: $result');
       return result; // This is the credential to be sent back to the backend for verification

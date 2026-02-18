@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/DataSeeder.dart';
@@ -20,10 +19,12 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/ExternalWidget
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/ObjectDatabaseBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Project/ProjectBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FocusBlock.dart';
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/HealthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
+import 'package:ice_shield/initial_layer/FocusAudioHandler.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import 'package:ice_shield/security_routing_layer/Routing/url_route/InternalRoute.dart';
-import 'package:pedometer/pedometer.dart';
+import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:signals_flutter/signals_flutter.dart';
@@ -66,48 +67,52 @@ class _DataLayerState extends State<DataLayer> {
   late WidgetManagerBlock widgetManagerBlock;
   late GrowthBlock growthBlock;
   late FocusBlock focusBlock;
+  late HealthBlock healthBlock;
 
-  late Stream<StepCount> _stepCountStream;
-  // late Stream<PedestrianStatus> _pedestrianStatusStream; // Removed
+  Timer? _healthSyncTimer;
 
   late HealthMetricsDAO healthMetricsDAO;
   // late StreamSubscription<StepCount> _stepSubscription; // Removed
   int currentSteps = 0;
+  bool _isInitialized = false;
+  final List<EffectCleanup> _effectCleanups = [];
 
   @override
   void initState() {
     super.initState();
 
     // 1. Keep initState() synchronous.
-    initPedometer();
+    // Start periodic HealthKit sync
+    _startHealthSync();
 
     _initializeData();
   }
 
-  void initPedometer() {
-    _stepCountStream = Pedometer.stepCountStream;
+  void _startHealthSync() {
+    // Initial fetch
+    _syncHealthData();
 
-    _stepCountStream.listen(_onStepCount, onError: _onStepCountError);
-  }
-
-  void _onStepCount(StepCount event) {
-    debugPrint("Sensor updated: ${event.steps}");
-
-    setState(() {
-      // Note: event.steps is total steps since last phone reboot
-      currentSteps = event.steps;
+    // Periodic sync every 1 minute
+    _healthSyncTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      _syncHealthData();
     });
-
-    // Automatically update your database score
-    // _updateDatabaseScore(event.steps);
   }
 
-  void _onStepCountError(error) {
-    debugPrint("Pedometer Error: $error");
+  Future<void> _syncHealthData() async {
+    final steps = await HealthService.fetchStepCount();
+    if (mounted) {
+      setState(() {
+        currentSteps = steps;
+      });
+
+      if (_isInitialized) {
+        healthBlock.updateSteps(steps);
+      }
+    }
   }
 
-  // 2. Create an async helper function to perform setup.
   Future<void> _initializeData() async {
+    print("DataLayerState(${identityHashCode(this)}): _initializeData called");
     // Use a try-catch block for robust error handling during async setup.
     try {
       // 3. Initialize the database instance internally.
@@ -128,23 +133,48 @@ class _DataLayerState extends State<DataLayer> {
       );
       healthMetricsDAO = widget.database.healthMetricsDAO;
 
-      // int steps = 0;3
+      // int steps = 0;
 
-      DateTime now = DateTime.now();
-      print("currentSteps: $currentSteps");
-      healthMetricsDAO.insertOrUpdateMetrics(
-        HealthMetricsTableCompanion(
-          steps: Value(currentSteps),
-          date: Value(now),
-        ),
+      // int steps = 0;
+      //   HealthMetricsTableCompanion(
+      //     personID: const Value(1),
+      //     steps: Value(currentSteps),
+      //     date: Value(now),
+      //   ),
+      // );
+
+      // 1. Pre-instantiate all blocks to avoid LateInitializationError in UI
+      // even if specific init steps fail.
+      healthBlock = HealthBlock(
+        personId: 1,
+        healthDao: widget.database.healthMetricsDAO,
       );
+      growthBlock = GrowthBlock();
+      scoreBlock = ScoreBlock();
+      focusBlock = FocusBlock(
+        focusSessionDao: widget.database.focusSessionsDAO,
+        personId: 1,
+        audioHandler: context.read<FocusAudioHandler>(),
+      );
+      objectDatabaseBlock = ObjectDatabaseBlock();
+      // widgetManagerBlock is initialized later
+
+      // Initialize HealthBlock
+      print("DataLayer: Initializing HealthBlock");
+      healthBlock.init();
 
       // Initialize GrowthBlock
-      growthBlock = GrowthBlock()..init(widget.database.growthDAO, 1);
+      print("DataLayer: Initializing GrowthBlock");
+      try {
+        growthBlock.init(widget.database.growthDAO, 1);
+      } catch (e) {
+        print("DataLayer: GrowthBlock init failed: $e");
+      }
 
       // Initialize ScoreBlock
-      scoreBlock = ScoreBlock()
-        ..init(
+      print("DataLayer: Initializing ScoreBlock");
+      try {
+        scoreBlock.init(
           widget.database.scoreDAO,
           widget.database.personManagementDAO,
           widget.database.financeDAO,
@@ -152,21 +182,32 @@ class _DataLayerState extends State<DataLayer> {
           widget.database.healthMealDAO,
           1,
         );
+      } catch (e) {
+        print("DataLayer: ScoreBlock init failed: $e");
+      }
 
       // Initialize FocusBlock
-      focusBlock =
-          FocusBlock(
-              focusSessionDao: widget.database.focusSessionsDAO,
-              personId: 1, // Default to 1 for now
-            )
-            ..growthBlock = growthBlock
-            ..scoreBlock = scoreBlock;
+      print("DataLayer: Initializing FocusBlock");
+      try {
+        focusBlock
+          ..growthBlock = growthBlock
+          ..scoreBlock = scoreBlock;
+
+        await focusBlock.init();
+      } catch (e, stack) {
+        print("DataLayer: FocusBlock init failed: $e");
+        print(stack);
+      }
 
       // widget.database.scoreDAO.insertOrUpdateScore(ScoreLocalData(personID: 1, healthGlobalScore: 0, socialGlobalScore: 0, financialGlobalScore: 0, careerGlobalScore: 0, createdAt: DateTime.now(), updatedAt: DateTime.now(), scoreID: 1));
 
+      print("DataLayer: FocusBlock initialized");
+
       // Initialize ObjectDatabaseBlock
+      print("DataLayer: Initializing ObjectDatabaseBlock");
       objectDatabaseBlock = ObjectDatabaseBlock();
 
+      print("DataLayer: Initializing WidgetManagerBlock");
       widgetManagerBlock = WidgetManagerBlock(
         widgetDao: widget.database.widgetDAO,
         personIdSignal: computed(
@@ -175,13 +216,15 @@ class _DataLayerState extends State<DataLayer> {
       );
 
       // Check session immediately on startup
-      authBlock.checkSession(context);
+      if (mounted) {
+        authBlock.checkSession(context);
+      }
 
       // Await asset loading
+      print("DataLayer: Loading theme asset");
       String jsonString = await rootBundle.loadString(
         "assets/LightThemePurple.json",
       );
-      // print(jsonString);
 
       ExternalWidgetProtocol externalWidgetProtocol = ExternalWidgetProtocol(
         name: '',
@@ -189,7 +232,9 @@ class _DataLayerState extends State<DataLayer> {
         host: '',
         url: '',
       );
+
       // Await database operations
+      print("DataLayer: Ensuring default data");
       await widget.database.externalWidgetsDAO.insertNewWidget(
         externalWidgetProtocol: externalWidgetProtocol,
       );
@@ -201,17 +246,19 @@ class _DataLayerState extends State<DataLayer> {
       );
 
       // --- NEW: Seed Data ---
-      // print("Seed data started");
+      print("DataLayer: Seeding data");
       await DataSeeder.seed(widget.database);
-      // print("Seed data completed");
-
-      // 4. Optionally, notify the UI that loading is complete if needed
-      // (e.g., using setState if a loading indicator is present).
-      setState(() {}); // Rebuild to provide initialized blocks
-    } catch (e) {
-      // Handle any initialization errors gracefully (e.g., logging)
-      print("Initialization error: $e");
-      // You might want to display an error to the user here
+      print("DataLayer: Initialization success");
+    } catch (e, stack) {
+      print("DataLayer: Initialization CRITICAL error: $e");
+      print(stack);
+    } finally {
+      print("DataLayer: Finalizing initialization (isInitialized = true)");
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     }
 
     // --- NEW: Monitoring --- Agent
@@ -219,24 +266,33 @@ class _DataLayerState extends State<DataLayer> {
 
     // --- NEW: Global Data Initializer ---
     // Listen to AuthBlock token changes to trigger initial data fetch
-    effect(() {
-      final token = authBlock.jwt.value;
-      if (token != null && token.isNotEmpty) {
-        personBlock.fetchInitialData(token).then((_) {
-          // Update object database urls after initial fetch
-          objectDatabaseBlock.updateUrlOfUser(personBlock);
-        });
-      }
-    });
+    _effectCleanups.add(
+      effect(() {
+        final token = authBlock.jwt.value;
+        if (token != null && token.isNotEmpty) {
+          personBlock.fetchInitialData(token).then((_) {
+            // Update object database urls after initial fetch
+            objectDatabaseBlock.updateUrlOfUser(personBlock);
+          });
+        }
+      }),
+    );
 
     // Bridge AuthBlock status to GoRouter refresh notifier
-    effect(() {
-      authStatusNotifier.value = authBlock.status.value;
-    });
+    _effectCleanups.add(
+      effect(() {
+        authStatusNotifier.value = authBlock.status.value;
+      }),
+    );
   }
 
   @override
   void dispose() {
+    _healthSyncTimer?.cancel();
+    for (final cleanup in _effectCleanups) {
+      cleanup();
+    }
+    _effectCleanups.clear();
     // OPTIONAL: It's good practice to close the database when the root widget dies.
     // database.close();
     super.dispose();
@@ -244,6 +300,12 @@ class _DataLayerState extends State<DataLayer> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return const MaterialApp(
+        home: Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
+    }
+
     // Only build MultiProvider if blocks are initialized to avoid LateInitializationError
     // But since we are providing them, and they are late, we need to be careful.
     // effectively they are initialized in initState -> _initializeData (sync part starts).
@@ -298,6 +360,10 @@ class _DataLayerState extends State<DataLayer> {
         ),
         Provider<ProjectsDAO>(create: (_) => widget.database.projectsDAO),
         Provider<ScoreDAO>(create: (_) => widget.database.scoreDAO),
+        Provider<CustomNotificationDAO>(
+          create: (_) => widget.database.customNotificationDAO,
+        ),
+        Provider<QuoteDAO>(create: (_) => widget.database.quoteDAO),
 
         // --- NEW: Reactive Blocks ---
         // PersonBlock (Load user ID 1 by default)
@@ -345,7 +411,8 @@ class _DataLayerState extends State<DataLayer> {
         Provider<FocusSessionsDAO>(
           create: (_) => widget.database.focusSessionsDAO,
         ),
-        Provider<FocusBlock>.value(value: focusBlock..init()),
+        Provider<FocusBlock>.value(value: focusBlock),
+        Provider<HealthBlock>.value(value: healthBlock),
       ],
       // Use MaterialApp as the child and WidgetConsumer as the home screen.
       child: widget.childWidget,

@@ -102,7 +102,7 @@ class MainShell extends StatelessWidget {
       // --- PERSISTENT APP BAR ---
       appBar: AppBar(
         title: const Text(
-          "ICE Shield",
+          "ICE Gate",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         elevation: 0,
@@ -111,6 +111,7 @@ class MainShell extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.home),
             tooltip: "Home",
+            iconSize: 30,
             onPressed: () {
               try {
                 context.pop();
@@ -124,6 +125,7 @@ class MainShell extends StatelessWidget {
             icon: const Icon(Icons.grid_view),
             tooltip: "Canvas",
             onPressed: () => context.go('/canvas'),
+            iconSize: 30,
           ),
 
           // 3. Navigate to Settings (Example)
@@ -132,7 +134,7 @@ class MainShell extends StatelessWidget {
           //   tooltip: "Settings",
           //   onPressed: () => context.go('/settings'),
           // ),
-          SettingsWidget.icon(context),
+          SettingsWidget.icon(context,size:30),
         ],
       ),
 

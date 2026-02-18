@@ -134,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            'ICE HUB',
+                            'ICE GATE',
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w900,
@@ -211,7 +211,7 @@ class _LoginPageState extends State<LoginPage> {
                                     shadowColor: Colors.blue.withOpacity(0.5),
                                   ).copyWith(
                                     elevation:
-                                        MaterialStateProperty.resolveWith(
+                                        WidgetStateProperty.resolveWith(
                                           (states) => 10,
                                         ),
                                   ),
