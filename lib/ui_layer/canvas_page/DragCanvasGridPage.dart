@@ -7,11 +7,11 @@ import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:provider/provider.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
 import 'package:flutter/services.dart';
-import 'package:ice_shield/ui_layer/notification_page/NotificationManagerPage.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:ice_shield/ui_layer/canvas_page/GoalConfigurationWidget.dart';
 import 'dart:ui';
 import 'StoreWidget.dart'; // The Bottom Bar
-import 'package:ice_shield/ui_layer/canvas_page/CanvasDynamicIsland.dart';
 
 // --- MAIN SCREEN WRAPPER ---
 
@@ -63,11 +63,10 @@ class DragCanvasGrid extends StatefulWidget {
           ),
         ),
       ),
-      mainFunction:() {
+      mainFunction: () {
         toggleStore();
         HapticFeedback.heavyImpact();
-        }
-        ,
+      },
     );
   }
 
@@ -94,14 +93,6 @@ class _DragCanvasGridState extends State<DragCanvasGrid> {
 
     return Scaffold(
       backgroundColor: baseColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading:
-            false, // CanvasDynamicIsland has its own back button
-        title: const CanvasDynamicIsland(),
-      ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
         bottom: false,
@@ -136,7 +127,7 @@ class _DragCanvasState extends State<DragCanvas> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const SizedBox(height: 10),
+        const SizedBox(height: 70), // Match 70px Header Area
 
         Expanded(
           child: Container(
@@ -178,13 +169,7 @@ class _DragCanvasState extends State<DragCanvas> {
                           color: Colors.blueAccent,
                           onTap: () {
                             HapticFeedback.mediumImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const NotificationManagerPage(),
-                              ),
-                            );
+                            context.push('/notifications');
                           },
                         ),
                         const SizedBox(height: 20),

@@ -161,9 +161,12 @@ class AuthBlock {
       print(
         "⚠️ Auto-auth returned unauthenticated. Waiting for user credentials.",
       );
+      // Fallback to Guest Mode automatically if offline/unauthenticated
+      await loginAsGuest();
     } catch (e) {
       print("❌ Auto-auth fetch failed: $e");
-      status.value = AuthStatus.unauthenticated;
+      // Fallback to Guest Mode automatically if offline
+      await loginAsGuest();
     }
   }
 

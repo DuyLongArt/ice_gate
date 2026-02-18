@@ -4,9 +4,13 @@
 // Edit these to tune the entire scoring system.
 
 // ─── 🏃 Health ───
-const int STEPS_PER_POINT = 1000; // 100 steps = 1 point
+const int STEPS_PER_POINT = 100; // 100 steps = 1 point
+const int STEP_GOAL = 10000; // Daily step goal
 const int CALORIE_LIMIT = 1500; // daily kcal threshold
 const int CALORIE_BONUS_POINTS = 15; // points if day < 1500 kcal
+const int WATER_GOAL = 2000; // ml
+const int EXERCISE_GOAL = 60; // min
+const double SLEEP_GOAL = 8.0; // hours
 
 // ─── ❤️ Social ───
 const int CONTACT_POINTS = 30; // each contact = +30 points
@@ -14,8 +18,8 @@ const int AFFECTION_PER_UNIT = 5; // every 5 affection...
 const int AFFECTION_POINTS = 10; // ...= +10 points
 
 // ─── 💼 Projects ───
-const double TASK_SCORE_INCREMENT = 5; // each task completion = +2
-const double PROJECT_SCORE_INCREMENT = 500; // each project completion = +50
+const double TASK_SCORE_INCREMENT = 2; // each task completion = +2
+const double PROJECT_SCORE_INCREMENT = 50; // each project completion = +50
 
 // ─── 💰 Finance ───
 const double FINANCE_SAVINGS_MILESTONE = 1000.0; // Every $1000 saved

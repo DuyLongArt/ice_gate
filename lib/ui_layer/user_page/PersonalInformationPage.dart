@@ -236,29 +236,36 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
       backgroundColor: colorScheme.surface,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text(
-          'Profile Details',
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-        ),
-        centerTitle: true,
+        toolbarHeight: 70,
+        leadingWidth: 0,
+        leading: const SizedBox.shrink(),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.white,
         actions: [
+        
           Container(
-            margin: const EdgeInsets.only(right: 12),
-            decoration: BoxDecoration(
+            margin: const EdgeInsets.only(right: 8),
+            decoration: const BoxDecoration(
               color: Colors.black12,
               shape: BoxShape.circle,
             ),
             child: _isEditing
                 ? IconButton(
-                    icon: const Icon(Icons.check_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                     onPressed: _isSaving ? null : () => _saveChanges(false),
                     tooltip: 'Save',
                   )
                 : IconButton(
-                    icon: const Icon(Icons.edit_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                     onPressed: () {
                       setState(() {
                         _isEditing = true;
@@ -267,6 +274,7 @@ class _PersonalInformationPageState extends State<PersonalInformationPage>
                     tooltip: 'Edit',
                   ),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: FadeTransition(

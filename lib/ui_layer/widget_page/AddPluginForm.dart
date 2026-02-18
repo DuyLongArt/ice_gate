@@ -173,8 +173,8 @@ class _WidgetFormDataState extends State<AddPluginForm> {
       constraints: const BoxConstraints(maxWidth: 6000),
       child: SingleChildScrollView(
         child: Container(
-          margin: const EdgeInsets.all(24),
-          padding: const EdgeInsets.all(24.0),
+          margin: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(28),
@@ -455,7 +455,7 @@ class _WidgetFormDataState extends State<AddPluginForm> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+        crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1.1,
@@ -484,7 +484,7 @@ class _WidgetFormDataState extends State<AddPluginForm> {
               children: [
                 Icon(
                   plugin.icon,
-                  size: 32,
+                  size: 24,
                   color: isSelected
                       ? colorScheme.primary
                       : colorScheme.onSurface,
@@ -510,7 +510,7 @@ class _WidgetFormDataState extends State<AddPluginForm> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
 
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
@@ -17,11 +16,17 @@ class HealthPage extends StatefulWidget {
     return MainButton(
       type: "health",
       destination: "/health",
-      size: size,
-      mainFunction: () {
-        print("Main button clicked");
+      mainFunction: () => context.go("/health"),
+      onSwipeUp: () => context.go("/canvas"),
+      onSwipeRight: () {
+        if (Navigator.canPop(context)) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
       },
-      icon: Icons.add,
+      size: size,
+      icon: Icons.health_and_safety_rounded,
       subButtons: [
         SubButton(
           icon: Icons.restaurant,
@@ -128,30 +133,30 @@ class _HealthPageState extends State<HealthPage> with WidgetsBindingObserver {
             slivers: [
               // Premium Header
               SliverAppBar(
-                expandedHeight: 120,
-                collapsedHeight: 80,
+                expandedHeight: 80,
+                collapsedHeight: 70,
                 pinned: true,
-                backgroundColor: colorScheme.surface,
+                toolbarHeight: 70,
+                backgroundColor: Colors.transparent,
                 elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  centerTitle: false,
-                  titlePadding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+                centerTitle: true,
+                leadingWidth: 0,
+                leading: const SizedBox.shrink(),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.home_rounded, size: 30),
+                    onPressed: () => context.go('/'),
                   ),
-                  title: SwipeablePage(
-                    onSwipe: () => context.pop(),
-                    child: AutoSizeText(
-                      'Health',
-                      style: textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.onSurface,
-                        letterSpacing: -1,
-                      ),
-                      maxLines: 1,
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.grid_view, size: 30),
+                    onPressed: () => context.go('/canvas'),
                   ),
-                ),
+                  IconButton(
+                    icon: const Icon(Icons.settings, size: 30),
+                    onPressed: () => context.go('/settings'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ),
 
               // Daily Summary Card

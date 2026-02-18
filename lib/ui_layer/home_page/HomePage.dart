@@ -47,6 +47,13 @@ class HomePage extends StatefulWidget {
         context.pop();
       },
       onSwipeUp: () => context.go("/canvas"),
+      onSwipeRight: () {
+        if (Navigator.canPop(context)) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
       subButtons: [
         SubButton(
           icon: Icons.create_new_folder_rounded,
@@ -287,32 +294,24 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
-          title: SwipeablePage(
-            onSwipe: () => context.pop(),
-            child: AutoSizeText(
-              widget.title,
-              style: textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-              maxLines: 1,
-            ),
-          ),
-          centerTitle: false,
+          toolbarHeight: 70,
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
+          leadingWidth: 0,
+          leading: const SizedBox.shrink(),
           actions: [
+            // IconButton(
+            //   icon: const Icon(Icons.home_rounded, size: 30),
+            //   onPressed: () => context.go('/'),
+            // ),
             IconButton(
-              icon: CircleAvatar(
-                backgroundColor: colorScheme.primaryContainer.withOpacity(0.5),
-                child: Icon(
-                  Icons.person_outline,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-              ),
-              onPressed: () => context.go('/profile'),
+              icon: const Icon(Icons.grid_view, size: 30),
+              onPressed: () => context.go('/canvas'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, size: 30),
+              onPressed: () => context.go('/settings'),
             ),
             const SizedBox(width: 8),
           ],
@@ -334,10 +333,37 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- SECTION: USER HEADER (Row 2) ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      IconButton(
+                        icon: CircleAvatar(
+                          backgroundColor: colorScheme.primaryContainer
+                              .withOpacity(0.5),
+                          child: Icon(
+                            Icons.person_outline,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                        ),
+                        onPressed: () => context.go('/profile'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   // --- SECTION: GAMIFIED HEADER ---
                   _buildGamifiedHeader(context),
                   const SizedBox(height: 24),
-
+                  _buildQuotesSection(context),
+                  const SizedBox(height: 24),
                   // --- SECTION: 4 life elements ---
                   _buildSectionHeader(context, '4 life elements', '/profile'),
                   const SizedBox(height: 12),
@@ -492,7 +518,6 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 32),
 
                   // --- SECTION: QUOTES ---
-                  _buildQuotesSection(context),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -1217,31 +1242,41 @@ class _HomePageState extends State<HomePage> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-          ),
-          child: Column(
+          padding: const EdgeInsets.all(2),
+          // decoration: BoxDecoration(
+          //   color: colorScheme.primary.withOpacity(0.05),
+          //   borderRadius: BorderRadius.circular(32),
+          //   border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          // ),
+          child: Row(
             children: [
               Icon(
                 Icons.format_quote_rounded,
                 color: colorScheme.primary,
-                size: 32,
+                size: 20,
               ),
-              const SizedBox(height: 12),
-              Text(
-                quote,
-                textAlign: TextAlign.center,
-                style: textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontStyle: FontStyle.italic,
-                  color: colorScheme.onSurface.withOpacity(0.8),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AutoSizeText(
+                  quote,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontStyle: FontStyle.italic,
+                    color: colorScheme.onSurface.withOpacity(0.8),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.format_quote_rounded,
+                color: colorScheme.primary,
+                size: 20,
+              ),
               if (author != null && author.isNotEmpty) ...[
-                const SizedBox(height: 8),
+                const SizedBox(width: 5),
                 Text(
                   "- $author",
                   style: textTheme.bodySmall?.copyWith(
@@ -1250,15 +1285,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
-              Container(
-                height: 2,
-                width: 40,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
+              const SizedBox(height: 5),
             ],
           ),
         );

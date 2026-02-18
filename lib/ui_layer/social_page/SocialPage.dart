@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
-import 'package:ice_shield/initial_layer/CoreLogics/GamificationService.dart';
-import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/Protocol/User/PersonProtocol.dart';
 import 'package:ice_shield/orchestration_layer/IDGen.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 
 class SocialPage extends StatefulWidget {
   const SocialPage({super.key});
@@ -16,11 +15,17 @@ class SocialPage extends StatefulWidget {
     return MainButton(
       type: "social",
       destination: "/social",
-      size: size,
-      icon: Icons.people,
-      mainFunction: () {
-        context.go('/social');
+      mainFunction: () => context.go("/social"),
+      onSwipeUp: () => context.go("/canvas"),
+      onSwipeRight: () {
+        if (Navigator.canPop(context)) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
       },
+      size: size,
+      icon: Icons.people_alt_rounded,
       subButtons: [
         SubButton(
           icon: Icons.favorite,
@@ -43,82 +48,11 @@ class SocialPage extends StatefulWidget {
 class _SocialPageState extends State<SocialPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _points = 0;
-  int _level = 0;
-  double _progress = 0.0;
-  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _loadGamificationData();
-  }
-
-  Future<void> _loadGamificationData() async {
-    final healthMetricsDao = context.read<HealthMetricsDAO>();
-    final healthMealDao = context.read<HealthMealDAO>();
-    final personDao = context.read<PersonManagementDAO>();
-    final scoreDao = context.read<ScoreDAO>();
-    final financeDao = context.read<FinanceDAO>();
-    final service = GamificationService(
-      healthMetricsDao,
-      healthMealDao,
-      personDao,
-      financeDao,
-    );
-
-    // Assume current user ID is 1
-    final totalPoints = await service.calculateTotalPoints(1);
-    final level = GamificationService.getLevel(totalPoints);
-    final progress = GamificationService.getProgressToNextLevel(totalPoints);
-
-    // Calculate social-specific points and push to global score
-    try {
-      final contacts = await personDao.getAllContacts().first;
-      int totalAffection = 0;
-      for (var c in contacts) {
-        totalAffection += c.affection;
-      }
-      // Social score = contacts * CONTACT_POINTS + (affection / AFFECTION_PER_UNIT) * AFFECTION_POINTS
-      final socialScore =
-          (contacts.length * CONTACT_POINTS).toDouble() +
-          ((totalAffection ~/ AFFECTION_PER_UNIT) * AFFECTION_POINTS)
-              .toDouble();
-      await scoreDao.updateSocialScore(1, socialScore);
-    } catch (e) {
-      print('Error updating social score: $e');
-    }
-
-    // Calculate finance-specific points and push to global score
-    try {
-      final accounts = await financeDao.watchAccounts(1).first;
-      final assets = await financeDao.watchAssets(1).first;
-
-      double totalNetWorth = 0;
-      for (var acc in accounts) {
-        totalNetWorth += acc.balance;
-      }
-      for (var asset in assets) {
-        totalNetWorth += (asset.currentEstimatedValue ?? 0.0);
-      }
-
-      final financeScore =
-          ((totalNetWorth / FINANCE_SAVINGS_MILESTONE) *
-          FINANCE_SAVINGS_POINTS);
-      await scoreDao.updateFinancialScore(1, financeScore);
-    } catch (e) {
-      print('Error updating finance score: $e');
-    }
-
-    if (mounted) {
-      setState(() {
-        _points = totalPoints;
-        _level = level;
-        _progress = progress;
-        _isLoading = false;
-      });
-    }
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -131,150 +65,329 @@ class _SocialPageState extends State<SocialPage>
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
-          title: const Text('Social & Growth'),
-          centerTitle: true,
-          backgroundColor: colorScheme.surface,
+          toolbarHeight: 70,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new),
-            onPressed: () => context.pop(),
-          ),
+          centerTitle: true,
+          leadingWidth: 0,
+          leading: const SizedBox.shrink(),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_rounded, size: 30),
+              onPressed: () => context.go('/'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.grid_view, size: 30),
+              onPressed: () => context.go('/canvas'),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, size: 30),
+              onPressed: () => context.go('/settings'),
+            ),
+            const SizedBox(width: 8),
+          ],
         ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
+        body: Column(
+          children: [
+            // Level Header
+            // _buildLevelHeader(context),
+
+            // const SizedBox(height: 16),
+
+            // Tabs
+            TabBar(
+              controller: _tabController,
+              labelColor: colorScheme.primary,
+              unselectedLabelColor: colorScheme.onSurfaceVariant,
+              indicatorColor: colorScheme.primary,
+              tabs: const [
+                Tab(text: 'Friends', icon: Icon(Icons.people_outline)),
+                Tab(text: 'Dating', icon: Icon(Icons.favorite_border)),
+                Tab(text: 'Family', icon: Icon(Icons.family_restroom)),
+                Tab(
+                  text: 'Directory',
+                  icon: Icon(Icons.import_contacts_rounded),
+                ),
+              ],
+            ),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
                 children: [
-                  // Level Header
-                  _buildLevelHeader(context),
-
-                  const SizedBox(height: 16),
-
-                  // Tabs
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: colorScheme.primary,
-                    unselectedLabelColor: colorScheme.onSurfaceVariant,
-                    indicatorColor: colorScheme.primary,
-                    tabs: const [
-                      Tab(text: 'Friends', icon: Icon(Icons.people_outline)),
-                      Tab(text: 'Dating', icon: Icon(Icons.favorite_border)),
-                      Tab(text: 'Family', icon: Icon(Icons.family_restroom)),
-                    ],
-                  ),
-
-                  // Tab Views
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildContactList(context, 'friend'),
-                        _buildContactList(context, 'dating'),
-                        _buildContactList(context, 'family'),
-                      ],
-                    ),
-                  ),
+                  _buildContactList(context, 'friend'),
+                  _buildContactList(context, 'dating'),
+                  _buildContactList(context, 'family'),
+                  _buildDirectoryList(context),
                 ],
               ),
+            ),
+          ],
+        ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _showAddContactDialog(context),
-          child: const Icon(Icons.person_add),
+          onPressed: () {
+            if (_tabController.index == 3) {
+              _importContacts();
+            } else {
+              _showAddContactDialog(context);
+            }
+          },
+          child: AnimatedBuilder(
+            animation: _tabController,
+            builder: (context, child) {
+              return Icon(
+                _tabController.index == 3
+                    ? Icons.contact_phone_rounded
+                    : Icons.person_add_rounded,
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLevelHeader(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  Future<void> _importContacts() async {
+    // 1. Request Permission
+    if (await FlutterContacts.requestPermission()) {
+      if (!mounted) return;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.tertiary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+      // 2. Fetch Contacts (with properties for phone/name)
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      try {
+        print("DEBUG: Starting minimal contact fetch...");
+        // 1. Fetch ONLY names and IDs (lightweight)
+        final contacts = await FlutterContacts.getContacts(
+          withProperties: false,
+        );
+
+        print("DEBUG: Fetched ${contacts.length} summary contacts.");
+
+        if (!mounted) return;
+        Navigator.pop(context); // Hide loading
+
+        // 3. Show Selection Dialog
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Level Circle
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.2),
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'LV',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '$_level',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total Points: $_points',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Next Level: ${(_level + 1) * 100} pts',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: _progress,
-                    backgroundColor: Colors.black.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
+          builder: (context) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.9,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Import from Contacts',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
-                    minHeight: 8,
-                  ),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: contacts.length,
+                        itemBuilder: (context, index) {
+                          final contactSummary = contacts[index];
+                          final name = contactSummary.displayName;
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              child: Text(
+                                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              ),
+                            ),
+                            title: Text(name),
+                            // No phone number in summary view
+                            onTap: () async {
+                              Navigator.pop(context); // Close summary sheet
+                              await _fetchAndConfirmContact(contactSummary.id);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      } catch (e, stack) {
+        print("DEBUG: Error fetching contacts: $e");
+        print(stack);
+        if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error loading contacts: $e')));
+        }
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Permission denied. Please enable in settings.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchAndConfirmContact(String contactId) async {
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Fetch full contact details for this specific ID
+      final contact = await FlutterContacts.getContact(contactId);
+
+      if (!mounted) return;
+      Navigator.pop(context); // Hide loading
+
+      if (contact != null) {
+        _showImportConfirmation(contact);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not fetch contact details')),
+        );
+      }
+    } catch (e) {
+      if (mounted && Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  void _showImportConfirmation(Contact contact) {
+    if (!mounted) return;
+
+    // Split name
+    String firstName = contact.name.first;
+    String lastName = contact.name.last;
+    if (firstName.isEmpty && contact.displayName.isNotEmpty) {
+      final parts = contact.displayName.split(' ');
+      firstName = parts.first;
+      if (parts.length > 1) lastName = parts.sublist(1).join(' ');
+    }
+
+    final firstNameController = TextEditingController(text: firstName);
+    final lastNameController = TextEditingController(text: lastName);
+    String selectedType = 'friend';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Import Contact'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: firstNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: lastNameController,
+                      decoration: const InputDecoration(labelText: 'Last Name'),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'friend',
+                          child: Text('Friend'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'dating',
+                          child: Text('Dating'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'family',
+                          child: Text('Family'),
+                        ),
+                      ],
+                      onChanged: (value) =>
+                          setDialogState(() => selectedType = value!),
+                      decoration: const InputDecoration(
+                        labelText: 'Relationship',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (firstNameController.text.isNotEmpty) {
+                      try {
+                        final dao = context.read<PersonManagementDAO>();
+                        await dao.createPerson(
+                          PersonProtocol.create(
+                            firstName: firstNameController.text,
+                            lastName: lastNameController.text,
+                            isActive: true,
+                            personID: IDGen.generate(),
+                            phoneNumber: contact.phones.isNotEmpty
+                                ? contact.phones.first.number
+                                : null,
+                          ),
+                          relationship: selectedType,
+                        );
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Contact imported!')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error importing: $e')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  child: const Text('Import'),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -528,6 +641,96 @@ class _SocialPageState extends State<SocialPage>
     );
   }
 
+  Widget _buildDirectoryList(BuildContext context) {
+    final personDao = context.watch<PersonDAO>();
+    final managementDao = context.read<PersonManagementDAO>();
+
+    return StreamBuilder<List<PersonData>>(
+      stream: personDao.getAllPersons(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final persons = snapshot.data!;
+
+        if (persons.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person_search_outlined,
+                  size: 64,
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                ),
+                const SizedBox(height: 16),
+                const Text('No people in directory'),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: persons.length,
+          itemBuilder: (context, index) {
+            final person = persons[index];
+            final currentRelationship = person.relationship;
+
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: Text(
+                    person.firstName.isNotEmpty
+                        ? person.firstName[0].toUpperCase()
+                        : '?',
+                  ),
+                ),
+                title: Text('${person.firstName} ${person.lastName ?? ''}'),
+                subtitle: Text('Status: ${currentRelationship.toUpperCase()}'),
+                trailing: PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) async {
+                    await managementDao.updateRelationship(
+                      person.personID,
+                      value,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Moved ${person.firstName} to ${value.toUpperCase()}',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'friend', child: Text('Friend')),
+                    const PopupMenuItem(value: 'dating', child: Text('Dating')),
+                    const PopupMenuItem(value: 'family', child: Text('Family')),
+                    const PopupMenuItem(value: 'none', child: Text('Remove')),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Color _getRelationshipColor(String type) {
     switch (type) {
       case 'dating':
@@ -543,9 +746,7 @@ class _SocialPageState extends State<SocialPage>
   void _showAddContactDialog(BuildContext context) {
     final firstNameController = TextEditingController();
     final lastNameController = TextEditingController();
-    final personIdController = TextEditingController();
     String selectedType = _getTabName(_tabController.index).toLowerCase();
-    bool addByID = false;
 
     showDialog(
       context: context,
@@ -558,57 +759,24 @@ class _SocialPageState extends State<SocialPage>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Toggle: new or by ID
-                    Row(
-                      children: [
-                        ChoiceChip(
-                          label: const Text('New Person'),
-                          selected: !addByID,
-                          onSelected: (_) =>
-                              setDialogState(() => addByID = false),
-                        ),
-                        const SizedBox(width: 8),
-                        ChoiceChip(
-                          label: const Text('By Person ID'),
-                          selected: addByID,
-                          onSelected: (_) =>
-                              setDialogState(() => addByID = true),
-                        ),
-                      ],
+                    TextField(
+                      controller: firstNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'First Name',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: lastNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Last Name (Optional)',
+                        prefixIcon: Icon(Icons.person_outline),
+                      ),
                     ),
                     const SizedBox(height: 16),
-
-                    if (addByID) ...[
-                      // Add by existing person ID
-                      TextField(
-                        controller: personIdController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Person ID',
-                          hintText: 'Enter existing person ID',
-                          prefixIcon: Icon(Icons.tag),
-                        ),
-                      ),
-                    ] else ...[
-                      // Create new person
-                      TextField(
-                        controller: firstNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'First Name',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: lastNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Last Name (Optional)',
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedType,
+                      value: selectedType,
                       items: const [
                         DropdownMenuItem(
                           value: 'friend',
@@ -643,37 +811,23 @@ class _SocialPageState extends State<SocialPage>
                 ElevatedButton(
                   onPressed: () async {
                     final dao = context.read<PersonManagementDAO>();
-
-                    if (addByID) {
-                      // Link existing person by ID
-                      final id = int.tryParse(personIdController.text);
-                      if (id != null) {
-                        final person = await dao.getPersonById(id);
-                        if (person != null) {
-                          await dao.updateRelationship(id, selectedType);
-                          Navigator.pop(context);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Person ID not found!'),
-                            ),
-                          );
-                        }
-                      }
+                    if (firstNameController.text.isNotEmpty) {
+                      await dao.createPerson(
+                        PersonProtocol.create(
+                          firstName: firstNameController.text,
+                          lastName: lastNameController.text,
+                          isActive: true,
+                          personID: IDGen.generate(),
+                        ),
+                        relationship: selectedType,
+                      );
+                      Navigator.pop(context);
                     } else {
-                      // Create new person
-                      if (firstNameController.text.isNotEmpty) {
-                        await dao.createPerson(
-                          PersonProtocol.create(
-                            firstName: firstNameController.text,
-                            lastName: lastNameController.text,
-                            isActive: true,
-                            personID: IDGen.generate(),
-                          ),
-                          relationship: selectedType,
-                        );
-                        Navigator.pop(context);
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please enter at least a first name.'),
+                        ),
+                      );
                     }
                   },
                   child: const Text('Save'),

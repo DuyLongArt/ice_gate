@@ -7,7 +7,6 @@ import 'package:ice_shield/ui_layer/finance_page/services/FinanceService.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FinanceBlock.dart';
 import 'package:go_router/go_router.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:provider/provider.dart';
 import 'package:signals/signals_flutter.dart';
 
@@ -22,6 +21,9 @@ class FinancePage extends StatefulWidget {
       icon: Icons.add,
       mainFunction: () {
         _showAddTransactionDialog(context);
+      },
+      onSwipeRight: () {
+        context.pop();
       },
       subButtons: [
         SubButton(
@@ -98,19 +100,28 @@ class FinancePage extends StatefulWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (type == null)
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'expense', label: Text('Expense')),
-                        ButtonSegment(value: 'income', label: Text('Income')),
-                        ButtonSegment(value: 'savings', label: Text('Savings')),
-                      ],
-                      selected: {selectedType},
-                      onSelectionChanged: (val) {
-                        setDialogState(() {
-                          selectedType = val.first;
-                          selectedCategory = 'general';
-                        });
-                      },
+                    FittedBox(
+                      child: SegmentedButton<String>(
+                        showSelectedIcon: false,
+                        segments: const [
+                          ButtonSegment(
+                            value: 'expense',
+                            label: Text('Expense'),
+                          ),
+                          ButtonSegment(value: 'income', label: Text('Income')),
+                          ButtonSegment(
+                            value: 'savings',
+                            label: Text('Savings'),
+                          ),
+                        ],
+                        selected: {selectedType},
+                        onSelectionChanged: (val) {
+                          setDialogState(() {
+                            selectedType = val.first;
+                            selectedCategory = 'general';
+                          });
+                        },
+                      ),
                     ),
                   const SizedBox(height: 16),
                   TextField(
@@ -187,13 +198,16 @@ class FinancePage extends StatefulWidget {
 }
 
 class _FinancePageState extends State<FinancePage> {
-  final NumberFormat _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    symbol: '\$',
+    decimalDigits: 1,
+  );
   late final List<FinanceAsset> _stocks = [];
   final List<FinanceAsset> _coins = FinanceService.getCoins();
   final Map<int, String> _projectNamesCache = {};
 
   Future<void> _initWatchlist() async {
-    const List<String> myTickers = ['FPT', 'VNM', 'HPG', 'SSI'];
+    const List<String> myTickers = ['FPT', 'VNM', 'HPG', 'SSI', 'VIC', 'TCB'];
 
     for (String ticker in myTickers) {
       final asset = await FinanceService.fetchVnStock(ticker);
@@ -225,20 +239,29 @@ class _FinancePageState extends State<FinancePage> {
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverAppBar(
-              expandedHeight: 0,
+              expandedHeight: 70,
               floating: true,
               pinned: true,
               elevation: 0,
-              backgroundColor: colorScheme.surface,
-              title: SwipeablePage(
-                onSwipe: () => context.pop(),
-                child: const AutoSizeText(
-                  'Finance',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                  maxLines: 1,
+              toolbarHeight: 70,
+              backgroundColor: Colors.transparent,
+              leadingWidth: 0,
+              leading: const SizedBox.shrink(),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.home_rounded, size: 30),
+                  onPressed: () => context.go('/'),
                 ),
-              ),
-              centerTitle: false,
+                IconButton(
+                  icon: const Icon(Icons.grid_view, size: 30),
+                  onPressed: () => context.go('/canvas'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings, size: 30),
+                  onPressed: () => context.go('/settings'),
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
 
             // Portfolio Summary
@@ -336,72 +359,103 @@ class _FinancePageState extends State<FinancePage> {
     final textTheme = Theme.of(context).textTheme;
     final totalBalance = block.totalBalance.value;
 
-    // For now, keep change/percent static or calculated if possible.
-    // Calculating "Change" requires history which we don't have easily yet.
-    // I'll leave change as dummy or 0 for now to avoid errors.
-    final totalChange = 0.0;
-    final changePercent = 0.0;
+    // Dynamic values for trend
+    final totalChange = block.monthlyNetChange.watch(context);
+    final changePercent = block.netChangePercent.watch(context);
+    final isPositive = totalChange >= 0;
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withRed(
+              (colorScheme.primary.red + 40).clamp(0, 255),
+            ),
+            colorScheme.tertiary,
+          ],
+          stops: const [0.0, 0.5, 1.0],
         ),
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(36),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: colorScheme.primary.withOpacity(0.4),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: -5,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'TOTAL NET WORTH', // Changed from Total Balance to be more accurate
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onPrimary.withOpacity(0.8),
-              letterSpacing: 1.2,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'TOTAL NET WORTH',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimary.withOpacity(0.7),
+                  letterSpacing: 2.0,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Icon(
+                Icons.wallet_rounded,
+                color: colorScheme.onPrimary.withOpacity(0.4),
+                size: 20,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             _currencyFormat.format(totalBalance),
-            style: textTheme.headlineMedium?.copyWith(
+            style: textTheme.displaySmall?.copyWith(
               color: colorScheme.onPrimary,
               fontWeight: FontWeight.w900,
-              letterSpacing: -1,
+              letterSpacing: -1.5,
+              height: 1.0,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: colorScheme.onPrimary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
+              color: colorScheme.onPrimary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: colorScheme.onPrimary.withOpacity(0.1)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.arrow_upward_rounded,
-                  color: Colors.greenAccent[400],
-                  size: 16,
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: isPositive ? Colors.greenAccent : Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPositive
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    color: Colors.black,
+                    size: 10,
+                  ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 8),
                 Text(
-                  '${_currencyFormat.format(totalChange)} ($changePercent%)',
+                  '${isPositive ? '+' : ''}${_currencyFormat.format(totalChange)} (${changePercent.toStringAsFixed(1)}%)',
                   style: TextStyle(
-                    color: Colors.greenAccent[400],
+                    color: isPositive
+                        ? Colors.greenAccent[100]
+                        : Colors.redAccent[100],
                     fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontSize: 13,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ],
@@ -477,44 +531,46 @@ class _FinancePageState extends State<FinancePage> {
   }) {
     return Container(
       width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: gradient,
+          colors: [gradient[0], gradient[1]],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            color: color.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+            spreadRadius: -2,
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  title.toUpperCase(),
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -524,7 +580,7 @@ class _FinancePageState extends State<FinancePage> {
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.8,
                   ),
                 ),
               ],
@@ -596,48 +652,67 @@ class _FinancePageState extends State<FinancePage> {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(24),
+          color: colorScheme.surfaceContainerHigh.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outlineVariant.withOpacity(0.2),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '$monthName Breakdown',
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
-                color: colorScheme.onSurface,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$monthName Breakdown',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                    color: colorScheme.onSurface,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Icon(
+                  Icons.donut_large_rounded,
+                  color: colorScheme.primary.withOpacity(0.5),
+                  size: 20,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             ...sortedCategories.map((entry) {
               final percentage = totalSpending > 0
                   ? entry.value / totalSpending
                   : 0.0;
               final catColor = categoryColors[entry.key] ?? colorScheme.primary;
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 20),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: catColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        color: catColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: catColor.withOpacity(0.1)),
                       ),
                       child: Icon(
                         categoryIcons[entry.key] ?? Icons.category_rounded,
                         color: catColor,
-                        size: 18,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -649,30 +724,54 @@ class _FinancePageState extends State<FinancePage> {
                                 entry.key[0].toUpperCase() +
                                     entry.key.substring(1),
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  letterSpacing: 0.2,
                                 ),
                               ),
                               Text(
                                 _currencyFormat.format(entry.value),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 13,
+                                  fontSize: 14,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: percentage,
-                              backgroundColor: catColor.withOpacity(0.1),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                catColor,
+                          const SizedBox(height: 8),
+                          Stack(
+                            children: [
+                              Container(
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: catColor.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
                               ),
-                              minHeight: 4,
-                            ),
+                              FractionallySizedBox(
+                                widthFactor: percentage,
+                                child: Container(
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        catColor,
+                                        catColor.withOpacity(0.7),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: catColor.withOpacity(0.2),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -696,10 +795,10 @@ class _FinancePageState extends State<FinancePage> {
     final isExpense = txn.type == 'expense' || txn.type == 'investment';
     final isSavings = txn.type == 'savings';
     final color = isExpense
-        ? Colors.red
+        ? Colors.redAccent
         : isSavings
-        ? Colors.green
-        : Colors.blue;
+        ? Colors.greenAccent[700]!
+        : Colors.blueAccent;
     final prefix = isExpense ? '-' : '+';
 
     final typeIcons = {
@@ -714,39 +813,51 @@ class _FinancePageState extends State<FinancePage> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.red.shade400.withOpacity(0.8),
+          borderRadius: BorderRadius.circular(20),
         ),
-        child: const Icon(Icons.delete_rounded, color: Colors.white),
+        child: const Icon(
+          Icons.delete_sweep_rounded,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
       onDismissed: (_) => financeBlock.deleteTransaction(txn.transactionID),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: colorScheme.outlineVariant.withOpacity(0.4),
+            color: colorScheme.outlineVariant.withOpacity(0.3),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: color.withOpacity(0.1)),
               ),
               child: Icon(
-                typeIcons[txn.type] ?? Icons.swap_horiz,
+                typeIcons[txn.type] ?? Icons.swap_horiz_rounded,
                 color: color,
-                size: 20,
+                size: 22,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -755,21 +866,30 @@ class _FinancePageState extends State<FinancePage> {
                     txn.description ??
                         (txn.category[0].toUpperCase() +
                             txn.category.substring(1)),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: colorScheme.onSurface,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       if (txn.projectID != null)
                         _buildProjectTag(context, txn.projectID!),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 10,
+                        color: colorScheme.onSurface.withOpacity(0.3),
+                      ),
+                      const SizedBox(width: 4),
                       Text(
                         '${txn.category[0].toUpperCase()}${txn.category.substring(1)} • ${DateFormat.MMMd().format(txn.transactionDate)}',
                         style: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.5),
+                          color: colorScheme.onSurface.withOpacity(0.4),
                           fontSize: 11,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
@@ -782,7 +902,8 @@ class _FinancePageState extends State<FinancePage> {
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w900,
-                fontSize: 15,
+                fontSize: 16,
+                letterSpacing: -0.5,
               ),
             ),
           ],
@@ -838,24 +959,42 @@ class _FinancePageState extends State<FinancePage> {
     final colorScheme = Theme.of(context).colorScheme;
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+        padding: const EdgeInsets.fromLTRB(28, 40, 20, 16),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: colorScheme.primary),
-            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 16, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 10),
             Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              title.toUpperCase(),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w900,
                 color: colorScheme.onSurface,
+                letterSpacing: 1.2,
               ),
             ),
             const Spacer(),
             TextButton(
               onPressed: () {},
-              child: const Text(
-                'See All',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'SEE ALL',
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 11,
+                  color: colorScheme.primary,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],
@@ -869,17 +1008,17 @@ class _FinancePageState extends State<FinancePage> {
     final isPositive = asset.change24h >= 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.25)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.015),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -888,10 +1027,11 @@ class _FinancePageState extends State<FinancePage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: asset.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
+              color: asset.color.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: asset.color.withOpacity(0.1)),
             ),
-            child: Icon(asset.icon, color: asset.color, size: 24),
+            child: Icon(asset.icon, color: asset.color, size: 26),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -902,15 +1042,17 @@ class _FinancePageState extends State<FinancePage> {
                   asset.symbol,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 16,
+                    fontSize: 17,
+                    letterSpacing: -0.5,
                   ),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   asset.name,
                   style: TextStyle(
-                    color: colorScheme.onSurface.withOpacity(0.5),
+                    color: colorScheme.onSurface.withOpacity(0.4),
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -923,15 +1065,26 @@ class _FinancePageState extends State<FinancePage> {
                 _currencyFormat.format(asset.price),
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
-                  fontSize: 16,
+                  fontSize: 17,
+                  letterSpacing: -0.5,
                 ),
               ),
-              Text(
-                '${isPositive ? '+' : ''}${asset.change24h}%',
-                style: TextStyle(
-                  color: isPositive ? Colors.green : Colors.red,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isPositive ? Colors.green : Colors.red).withOpacity(
+                    0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${isPositive ? '▲' : '▼'} ${asset.change24h.abs()}%',
+                  style: TextStyle(
+                    color: isPositive ? Colors.green[700] : Colors.red[700],
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
             ],

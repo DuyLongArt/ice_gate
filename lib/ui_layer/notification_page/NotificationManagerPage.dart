@@ -5,23 +5,51 @@ import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/HealthBlock.dart';
 
-class NotificationManagerPage extends StatelessWidget {
+class NotificationManagerPage extends StatefulWidget {
   const NotificationManagerPage({super.key});
+
+  @override
+  State<NotificationManagerPage> createState() =>
+      _NotificationManagerPageState();
+}
+
+class _NotificationManagerPageState extends State<NotificationManagerPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final notificationService = context.watch<LocalNotificationService>();
     final isEnabled = notificationService.notificationsEnabled.watch(context);
 
+    final colorScheme = Theme.of(context).colorScheme;
+
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            Container(color: const Color(0xFF0A0E27).withOpacity(0.9)),
+            Container(color: colorScheme.surface.withOpacity(0.9)),
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -32,44 +60,99 @@ class NotificationManagerPage extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Notification Center",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.0,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "NOTIFICATION CENTER",
+                              style: TextStyle(
+                                color: Colors.blueAccent.withOpacity(0.8),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "HUNTER MODE ",
+                              style: TextStyle(
+                                color: colorScheme.onSurface,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                          ),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.1),
-                          ),
+                        Row(
+                          children: [
+                           
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: colorScheme.onSurface,
+                                size: 30,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: colorScheme.onSurface
+                                    .withOpacity(0.05),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(
+                                    color: colorScheme.onSurface.withOpacity(
+                                      0.1,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    TabBar(
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      dividerColor: Colors.transparent,
-                      indicatorColor: Colors.blueAccent,
-                      labelColor: Colors.white,
-                      unselectedLabelColor: Colors.white.withOpacity(0.4),
-                      tabs: const [
-                        Tab(text: "Reminders"),
-                        Tab(text: "Quotes Board"),
-                      ],
+                    const SizedBox(height: 24),
+                    Container(
+                      height: 45,
+                      decoration: BoxDecoration(
+                        color: colorScheme.onSurface.withOpacity(0.03),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorScheme.onSurface.withOpacity(0.05),
+                        ),
+                      ),
+                      child: TabBar(
+                        isScrollable: true,
+                        tabAlignment: TabAlignment.start,
+                        dividerColor: Colors.transparent,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        indicator: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.blueAccent.withOpacity(0.2),
+                          border: Border.all(
+                            color: Colors.blueAccent.withOpacity(0.3),
+                          ),
+                        ),
+                        labelColor: Colors.blueAccent,
+                        unselectedLabelColor: colorScheme.onSurface.withOpacity(
+                          0.4,
+                        ),
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: "QUESTS"),
+                          Tab(text: "REMINDERS"),
+                          Tab(text: "WISDOM"),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
                     Expanded(
                       child: TabBarView(
                         children: [
+                          _buildSystemQuestsTab(context),
                           _buildRemindersTab(context, isEnabled),
                           _buildQuotesTab(context),
                         ],
@@ -97,10 +180,10 @@ class NotificationManagerPage extends StatelessWidget {
             value: isEnabled,
             onChanged: (val) =>
                 notificationService.setNotificationsEnabled(val),
-            title: const Text(
+            title: Text(
               "Allow Notifications",
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -110,7 +193,7 @@ class NotificationManagerPage extends StatelessWidget {
                   ? "You will receive updates about your stats and tasks."
                   : "Notifications are paused.",
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 fontSize: 12,
               ),
             ),
@@ -137,10 +220,10 @@ class NotificationManagerPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Custom Reminders",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -164,7 +247,9 @@ class NotificationManagerPage extends StatelessWidget {
                     child: Text(
                       "No custom reminders set.",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.4),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -187,10 +272,10 @@ class NotificationManagerPage extends StatelessWidget {
             },
           ),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             "Quick Channels",
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -216,6 +301,260 @@ class NotificationManagerPage extends StatelessWidget {
     );
   }
 
+  Widget _buildSystemQuestsTab(BuildContext context) {
+    final healthBlock = context.read<HealthBlock>();
+
+    return Watch((context) {
+      final steps = healthBlock.todaySteps.value;
+      final stepGoal = healthBlock.dailyStepGoal.value;
+      final water = healthBlock.todayWater.value;
+
+      return ListView(
+        physics: const BouncingScrollPhysics(),
+        children: [
+          AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final pulseOpacity = (_pulseController.value * 0.2 + 0.2);
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.blue.withOpacity(0.15),
+                      Colors.cyan.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.cyanAccent.withOpacity(pulseOpacity),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.cyan.withOpacity(0.1),
+                      blurRadius: 20 * _pulseController.value,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: child,
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "[ DAILY QUEST: IMMERSIVE STATS ]",
+                        style: TextStyle(
+                          color: Colors.cyanAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Icon(
+                      Icons.radar_rounded,
+                      color: Colors.cyanAccent.withOpacity(0.8),
+                      size: 18,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _buildQuestItem(
+                  "Physical Training",
+                  "Push-ups: 0 / 100",
+                  0.0,
+                  Colors.orangeAccent,
+                  Icons.fitness_center_rounded,
+                ),
+                _buildQuestItem(
+                  "Core Strength",
+                  "Sit-ups: 0 / 100",
+                  0.0,
+                  Colors.greenAccent,
+                  Icons.accessibility_new_rounded,
+                ),
+                _buildQuestItem(
+                  "Leg Endurance",
+                  "Squats: 0 / 100",
+                  0.0,
+                  Colors.blueAccent,
+                  Icons.directions_run_rounded,
+                ),
+                _buildQuestItem(
+                  "Movement Radius",
+                  "$steps / $stepGoal m",
+                  (steps / stepGoal).clamp(0.0, 1.0),
+                  Colors.cyanAccent,
+                  Icons.explore_rounded,
+                ),
+                _buildQuestItem(
+                  "Molecular Support",
+                  "$water / 2000 ml",
+                  (water / 2000).clamp(0.0, 1.0),
+                  Colors.lightBlueAccent,
+                  Icons.water_drop_rounded,
+                ),
+                const SizedBox(height: 20),
+                const Divider(color: Colors.cyanAccent, thickness: 0.5),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: Colors.redAccent.withOpacity(0.8),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        "WARNING: PERFORMANCE DEGRADATION DETECTED UPON FAILURE.",
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          Text(
+            "COMPLETED PROTOCOLS",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.24),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildGlassCard(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Text(
+                  "SYSTEM INITIALIZED - NO RECORDS FOUND",
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.15),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildQuestItem(
+    String title,
+    String progressText,
+    double progress,
+    Color color,
+    IconData icon,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          progressText,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Stack(
+                      children: [
+                        Container(
+                          height: 4,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: color,
+                              borderRadius: BorderRadius.circular(2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: color.withOpacity(0.5),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuotesTab(BuildContext context) {
     final quoteDao = context.watch<QuoteDAO>();
 
@@ -224,10 +563,10 @@ class NotificationManagerPage extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               "Your Wisdom Board",
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -253,7 +592,11 @@ class NotificationManagerPage extends StatelessWidget {
                   child: Text(
                     "Your wisdom board is empty.\nAdd quotes to inspire your day.",
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.4)),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.4),
+                    ),
                   ),
                 );
               }
@@ -274,18 +617,42 @@ class NotificationManagerPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGlassCard({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+  Widget _buildGlassCard({required Widget child, Color? borderColor}) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
-          child: child,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.onSurface.withOpacity(0.08),
+                  Theme.of(context).colorScheme.onSurface.withOpacity(0.03),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color:
+                    borderColor ??
+                    Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                width: 1.5,
+              ),
+            ),
+            child: child,
+          ),
         ),
       ),
     );
@@ -299,51 +666,47 @@ class NotificationManagerPage extends StatelessWidget {
     VoidCallback? onTest,
   }) {
     return _buildGlassCard(
+      borderColor: color.withOpacity(0.2),
       child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.2),
+            color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.2)),
           ),
-          child: Icon(icon, color: color, size: 20),
+          child: Icon(icon, color: color, size: 24),
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            letterSpacing: -0.2,
           ),
         ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onTest != null)
-              IconButton(
-                icon: Icon(
-                  Icons.notifications_active_rounded,
-                  color: color.withOpacity(0.8),
-                  size: 20,
-                ),
-                onPressed: onTest,
-                tooltip: "Test Notification",
-              ),
-            Switch(
-              value: true, // Mock individual channel toggle for now
-              onChanged: (val) {},
-              activeColor: color,
-              trackColor: MaterialStateProperty.resolveWith(
-                (states) => states.contains(MaterialState.selected)
-                    ? color.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.1),
-              ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: Text(
+            subtitle,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+              fontSize: 12,
+              height: 1.4,
             ),
-          ],
+          ),
+        ),
+        trailing: Switch(
+          value: true,
+          onChanged: (val) {},
+          activeColor: color,
+          trackColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? color.withOpacity(0.4)
+                : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+          ),
         ),
       ),
     );
@@ -360,65 +723,97 @@ class NotificationManagerPage extends StatelessWidget {
     ).format(notification.scheduledTime);
 
     return _buildGlassCard(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        title: Text(
-          notification.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(
-              notification.content,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(height: 8),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  Icons.access_time_rounded,
-                  size: 14,
-                  color: Colors.blueAccent.withOpacity(0.8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.title,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        notification.content,
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  formattedTime,
-                  style: TextStyle(color: Colors.blueAccent, fontSize: 12),
+                Switch(
+                  value: notification.isEnabled,
+                  onChanged: (val) async {
+                    final updated = notification.copyWith(isEnabled: val);
+                    await dao.updateNotification(updated);
+                    await service.syncAllNotifications();
+                  },
+                  activeColor: Colors.blueAccent,
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: notification.isEnabled,
-              onChanged: (val) async {
-                final updated = notification.copyWith(isEnabled: val);
-                await dao.updateNotification(updated);
-                await service.syncAllNotifications();
-              },
-              activeColor: Colors.blueAccent,
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: Colors.redAccent.withOpacity(0.8),
-              ),
-              onPressed: () async {
-                await dao.deleteNotification(notification.notificationID);
-                await service.syncAllNotifications();
-              },
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.blueAccent.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 14,
+                        color: Colors.blueAccent,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        formattedTime,
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.redAccent.withOpacity(0.6),
+                    size: 20,
+                  ),
+                  onPressed: () async {
+                    await dao.deleteNotification(notification.notificationID);
+                    await service.syncAllNotifications();
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -444,9 +839,11 @@ class NotificationManagerPage extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
-              title: const Text(
+              title: Text(
                 "New Reminder",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               content: SingleChildScrollView(
                 child: Column(
@@ -454,15 +851,21 @@ class NotificationManagerPage extends StatelessWidget {
                   children: [
                     TextField(
                       controller: titleController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         labelText: "Title",
                         labelStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
                         ),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.1),
                           ),
                         ),
                       ),
@@ -470,15 +873,21 @@ class NotificationManagerPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     TextField(
                       controller: contentController,
-                      style: const TextStyle(color: Colors.white),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
                       decoration: InputDecoration(
                         labelText: "Content",
                         labelStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
                         ),
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withOpacity(0.1),
                           ),
                         ),
                       ),
@@ -492,8 +901,8 @@ class NotificationManagerPage extends StatelessWidget {
                           value: f,
                           child: Text(
                             f.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurface,
                               fontSize: 13,
                             ),
                           ),
@@ -504,15 +913,22 @@ class NotificationManagerPage extends StatelessWidget {
                       decoration: InputDecoration(
                         labelText: "Repeat",
                         labelStyle: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.5),
                         ),
                       ),
                     ),
                     if (repeatFrequency == 'weekly') ...[
                       const SizedBox(height: 16),
-                      const Text(
+                      Text(
                         "Select Days",
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _buildDayPicker(
@@ -525,7 +941,9 @@ class NotificationManagerPage extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       title: Text(
                         "Time: ${selectedTime.format(context)}",
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
                       ),
                       trailing: const Icon(
                         Icons.access_time_rounded,
@@ -620,14 +1038,16 @@ class NotificationManagerPage extends StatelessWidget {
             decoration: BoxDecoration(
               color: isSelected
                   ? Colors.blueAccent
-                  : Colors.white.withOpacity(0.05),
+                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
             child: Text(
               days[index],
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.white70,
+                color: isSelected
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -650,9 +1070,9 @@ class NotificationManagerPage extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
+          title: Text(
             "Inspirational Quote",
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -660,13 +1080,17 @@ class NotificationManagerPage extends StatelessWidget {
               TextField(
                 controller: contentController,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 decoration: _dialogInputDecoration("Quote Contents"),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: authorController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 decoration: _dialogInputDecoration("Author"),
               ),
             ],
@@ -706,31 +1130,68 @@ class NotificationManagerPage extends StatelessWidget {
   Widget _buildQuoteTile(BuildContext context, QuoteData quote) {
     final dao = context.read<QuoteDAO>();
     return _buildGlassCard(
-      child: ListTile(
-        title: Text(
-          "\"${quote.content}\"",
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-        subtitle: quote.author != null
-            ? Text(
-                "- ${quote.author}",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
-                  fontSize: 13,
+      borderColor: Colors.amberAccent.withOpacity(0.1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.format_quote_rounded,
+                  color: Colors.amberAccent.withOpacity(0.5),
+                  size: 32,
                 ),
-              )
-            : null,
-        trailing: IconButton(
-          icon: const Icon(
-            Icons.delete_outline,
-            color: Colors.redAccent,
-            size: 20,
-          ),
-          onPressed: () => dao.deleteQuote(quote.quoteID),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    quote.content,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontSize: 16,
+                      height: 1.6,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (quote.author != null)
+                  Text(
+                    "— ${quote.author}",
+                    style: TextStyle(
+                      color: Colors.amberAccent.withOpacity(0.6),
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.2),
+                    size: 18,
+                  ),
+                  onPressed: () => dao.deleteQuote(quote.quoteID),
+                  style: IconButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(32, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -739,9 +1200,13 @@ class NotificationManagerPage extends StatelessWidget {
   InputDecoration _dialogInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+      labelStyle: TextStyle(
+        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+      ),
       enabledBorder: UnderlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+        ),
       ),
       focusedBorder: const UnderlineInputBorder(
         borderSide: BorderSide(color: Colors.blueAccent),

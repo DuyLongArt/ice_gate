@@ -82,20 +82,29 @@ class _WidgetPage extends State<WidgetPage> {
     final dao = context.read<ExternalWidgetsDAO>();
 
     return Scaffold(
-      // 1. Scaffold Background Color
-      backgroundColor: colorScheme.surface,
-
       appBar: AppBar(
-        title: Text(
-          'My Widgets',
-          // 2. Use headlineSmall or titleLarge for AppBar titles
-          style: textTheme.titleLarge?.copyWith(color: colorScheme.onPrimary),
-        ),
-        // 3. AppBar colors from ColorScheme
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary, // Icons and text color
+        toolbarHeight: 70,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        leadingWidth: 0,
+        leading: const SizedBox.shrink(),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_rounded, size: 30),
+            onPressed: () => context.go('/'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.grid_view_rounded, size: 30),
+            onPressed: () => context.go('/canvas'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings, size: 30),
+            onPressed: () => context.go('/settings'),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-
       body: StreamBuilder<List<ExternalWidgetData>>(
         stream: dao.watchAllWidgets(),
         builder: (context, snapshot) {

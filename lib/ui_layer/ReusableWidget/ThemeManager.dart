@@ -153,6 +153,30 @@ class ThemeManager {
                             'assets/ForestWhisper.json',
                             Icons.hearing_rounded,
                           ),
+                          _buildThemeOption(
+                            context,
+                            'Volcano 🌋',
+                            'assets/Volcano.json',
+                            Icons.volcano_rounded,
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Ocean Deep 🌊',
+                            'assets/OceanDeep.json',
+                            Icons.waves_rounded,
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Cyberpunk Pink 💖',
+                            'assets/CyberpunkPink.json',
+                            Icons.flash_on_rounded,
+                          ),
+                          _buildThemeOption(
+                            context,
+                            'Enchanted Forest ✨',
+                            'assets/EnchantedForest.json',
+                            Icons.nature_people_rounded,
+                          ),
 
                           Padding(
                             padding: const EdgeInsets.symmetric(

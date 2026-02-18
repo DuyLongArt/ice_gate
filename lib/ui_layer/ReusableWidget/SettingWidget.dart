@@ -6,6 +6,7 @@ import 'package:ice_shield/ui_layer/ReusableWidget/ThemeManager.dart';
 import 'package:provider/provider.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
+import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 
 class SettingsWidget extends StatelessWidget {
   final String title;
@@ -54,10 +55,22 @@ class SettingsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: AutoSizeText(title, maxLines: 1),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        actions: [BackWidget()],
+        toolbarHeight: 70,
+        leadingWidth: 0,
+        leading: const SizedBox.shrink(),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.home_rounded, size: 30),
+            onPressed: () => context.go('/'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.grid_view, size: 30),
+            onPressed: () => context.go('/canvas'),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: ListView(
         children: <Widget>[
@@ -154,7 +167,6 @@ class SettingsWidget extends StatelessWidget {
             ),
           ),
 
-         
           _buildSettingTile(
             context: context,
             settingTitle: 'Terms of Service',
@@ -167,14 +179,75 @@ class SettingsWidget extends StatelessWidget {
           _buildSettingTile(
             context: context,
             settingTitle: 'Version',
-            subtitle: '1.0.0',
+            subtitle: '2.0.0',
             icon: Icons.info_outline,
-            trailingWidget:
-                const SizedBox.shrink(), // No arrow for version info
+            trailingWidget: const SizedBox.shrink(),
             onTap: null,
           ),
+
+          Divider(
+            height: 1,
+            indent: 20,
+            endIndent: 20,
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
+          ),
+
+          // 4. System / Debug
+          // const Padding(
+          //   padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          //   child: AutoSizeText(
+          //     'SYSTEM',
+          //     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          //     maxLines: 1,
+          //   ),
+          // ),
+
+          // _buildSettingTile(
+          //   context: context,
+          //   settingTitle: 'Reset Database',
+          //   subtitle: 'Clear all local application data',
+          //   icon: Icons.delete_forever,
+          //   onTap: () => _showResetDatabaseDialog(context),
+          // ),
         ],
       ),
+    );
+  }
+
+  void _showResetDatabaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Reset Database?'),
+          content: const Text(
+            'This will permanently delete all your local data including focus sessions, health logs, and settings. This action cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final database = context.read<AppDatabase>();
+                await database.clearAllData();
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Database reset successful.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('RESET ALL DATA'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

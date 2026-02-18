@@ -125,6 +125,30 @@ final timerThemes = [
     Icons.local_fire_department_rounded,
     soundAsset: 'sounds/fire_crackle.mp3',
   ),
+  TimerThemeInfo(
+    'Volcano',
+    const Color(0xFFFF4500),
+    Icons.volcano_rounded,
+    soundAsset: 'sounds/lava_flow.mp3',
+  ),
+  TimerThemeInfo(
+    'Ocean Deep',
+    const Color(0xFF008080),
+    Icons.waves_rounded,
+    soundAsset: 'sounds/deep_ocean.mp3',
+  ),
+  TimerThemeInfo(
+    'Cyberpunk Pink',
+    const Color(0xFFFF00FF),
+    Icons.flash_on_rounded,
+    soundAsset: 'sounds/synthwave.mp3',
+  ),
+  TimerThemeInfo(
+    'Enchanted Forest',
+    const Color(0xFF32CD32),
+    Icons.nature_people_rounded,
+    soundAsset: 'sounds/magic_forest.mp3',
+  ),
 ];
 
 class FocusPage extends StatefulWidget {
@@ -288,19 +312,8 @@ class _FocusPageState extends State<FocusPage> {
                           ),
                         ),
 
-                        // Centered Title
-                        Expanded(
-                          child: Center(
-                            child: Text(
-                              "FOCUS SPACE",
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 4.0, // Premium spacing
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Centered Title (Removed - integrated into DI elsewhere or hidden)
+                        const Spacer(),
 
                         // Balance Space (matches back button size approx)
                         const SizedBox(width: 48),
@@ -1194,6 +1207,14 @@ class _GloriousTimerPainter extends CustomPainter {
         _paintIceDetails(canvas, center, radius, startAngle, sweepAngle);
       } else if (themeName == 'Indigo') {
         _paintIndigoDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Volcano') {
+        _paintVolcanoDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Ocean Deep') {
+        _paintOceanDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Cyberpunk Pink') {
+        _paintCyberDetails(canvas, center, radius, startAngle, sweepAngle);
+      } else if (themeName == 'Enchanted Forest') {
+        _paintForestDetails(canvas, center, radius, startAngle, sweepAngle);
       }
     }
 
@@ -1231,23 +1252,27 @@ class _GloriousTimerPainter extends CustomPainter {
     double sweepAngle,
   ) {
     // Fewer full flowers than single petals for clarity
-    final flowerCount = (sweepAngle * radius / 60).floor();
-    final flowerRadius = 8.0; // Size of each flower
+    final flowerCount = (sweepAngle * radius / 40).floor();
+    final random = math.Random(42);
+    const flowerRadius = 8.0;
 
     for (int i = 0; i <= flowerCount; i++) {
       final angle = startAngle + (sweepAngle * (i / flowerCount));
+      final drift = (random.nextDouble() - 0.5) * 12;
       final pos = Offset(
-        center.dx + radius * math.cos(angle),
-        center.dy + radius * math.sin(angle),
+        center.dx + (radius + drift) * math.cos(angle),
+        center.dy + (radius + drift) * math.sin(angle),
       );
 
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
       // Rotate flowers slightly for organic variety
-      canvas.rotate(angle + i * 0.5);
+      canvas.rotate(angle + i * random.nextDouble() * 2);
+      final scale = 0.8 + random.nextDouble() * 0.4;
+      canvas.scale(scale);
 
       final flowerPaint = Paint()
-        ..color = const Color(0xFFFFB7C5).withValues(alpha: 0.9)
+        ..color = const Color(0xFFFFB7C5).withOpacity(0.9)
         ..style = PaintingStyle.fill;
 
       // Draw 5 Petals (Based on user snippet logic)
@@ -1431,6 +1456,118 @@ class _GloriousTimerPainter extends CustomPainter {
         5,
         pulsePaint..color = pulsePaint.color.withOpacity(0.2),
       );
+    }
+  }
+
+  void _paintVolcanoDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final sparkCount = (sweepAngle * radius / 20).floor();
+    final random = math.Random(7);
+    final sparkPaint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < sparkCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / sparkCount));
+      final drift = random.nextDouble() * 15;
+      final pos = Offset(
+        center.dx + (radius + drift) * math.cos(angle),
+        center.dy + (radius + drift) * math.sin(angle),
+      );
+
+      sparkPaint.color = Colors.orangeAccent.withOpacity(0.8 - (drift / 20));
+      canvas.drawCircle(pos, 1.5 + random.nextDouble() * 2, sparkPaint);
+    }
+  }
+
+  void _paintOceanDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final bubbleCount = (sweepAngle * radius / 30).floor();
+    final random = math.Random(13);
+    final bubblePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (int i = 0; i < bubbleCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / bubbleCount));
+      final drift = -(random.nextDouble() * 10);
+      final pos = Offset(
+        center.dx + (radius + drift) * math.cos(angle),
+        center.dy + (radius + drift) * math.sin(angle),
+      );
+
+      bubblePaint.color = Colors.white.withOpacity(
+        0.4 + random.nextDouble() * 0.4,
+      );
+      canvas.drawCircle(pos, 2 + random.nextDouble() * 3, bubblePaint);
+    }
+  }
+
+  void _paintCyberDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final pulseCount = (sweepAngle * radius / 40).floor();
+    final random = math.Random(21);
+    final linePaint = Paint()
+      ..color = const Color(0xFF00FFFF).withOpacity(0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    for (int i = 0; i < pulseCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / pulseCount));
+      final pos = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+
+      canvas.save();
+      canvas.translate(pos.dx, pos.dy);
+      canvas.rotate(angle + math.pi / 2);
+
+      // Glitchy line
+      canvas.drawLine(
+        Offset(-5, (random.nextDouble() - 0.5) * 8),
+        Offset(5, (random.nextDouble() - 0.5) * 8),
+        linePaint,
+      );
+      canvas.restore();
+    }
+  }
+
+  void _paintForestDetails(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double startAngle,
+    double sweepAngle,
+  ) {
+    final sporeCount = (sweepAngle * radius / 35).floor();
+    final random = math.Random(33);
+    final sporePaint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < sporeCount; i++) {
+      final angle = startAngle + (sweepAngle * (i / sporeCount));
+      final drift = (random.nextDouble() - 0.5) * 20;
+      final pos = Offset(
+        center.dx + (radius + drift) * math.cos(angle),
+        center.dy + (radius + drift) * math.sin(angle),
+      );
+
+      sporePaint.color = Colors.lightGreenAccent.withOpacity(0.6);
+      sporePaint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+      canvas.drawCircle(pos, 1.5, sporePaint);
     }
   }
 

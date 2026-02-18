@@ -83,6 +83,41 @@ class FinanceBlock {
         .fold(0.0, (sum, t) => sum + t.amount);
   });
 
+  /// Monthly net change (Income + Savings - Expenses - Investment)
+  late final monthlyNetChange = computed(() {
+    final now = DateTime.now();
+    final txs = transactions.value.where(
+      (t) =>
+          t.transactionDate.month == now.month &&
+          t.transactionDate.year == now.year,
+    );
+
+    final income = txs
+        .where((t) => t.type == 'income')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final expense = txs
+        .where((t) => t.type == 'expense')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final investment = txs
+        .where((t) => t.type == 'investment')
+        .fold(0.0, (sum, t) => sum + t.amount);
+    final savings = txs
+        .where((t) => t.type == 'savings')
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    return income + savings - expense - investment;
+  });
+
+  /// Percentage of net change relative to previous balance
+  late final netChangePercent = computed(() {
+    final change = monthlyNetChange.value;
+    final total = totalBalance.value;
+    final previousBalance = total - change;
+
+    if (previousBalance <= 0) return 0.0;
+    return (change / previousBalance) * 100;
+  });
+
   /// Spending grouped by category this month
   late final spendingByCategory = computed(() {
     final now = DateTime.now();

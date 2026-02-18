@@ -371,6 +371,7 @@ class _DataLayerState extends State<DataLayer> {
         Provider<CustomNotificationDAO>(
           create: (_) => widget.database.customNotificationDAO,
         ),
+        Provider<PersonDAO>(create: (_) => widget.database.personDAO),
         Provider<QuoteDAO>(create: (_) => widget.database.quoteDAO),
         Provider<HealthLogsDAO>(create: (_) => widget.database.healthLogsDAO),
 

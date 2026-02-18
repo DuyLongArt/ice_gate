@@ -198,7 +198,6 @@ class FocusBlock {
         }
 
         // Update notification every second for a live countdown experience
-        
       } else {
         completeSession();
       }
@@ -401,6 +400,14 @@ class FocusBlock {
         return 'sounds/crickets.mp3';
       case 'Cyberpunk 2077':
         return 'sounds/cyber_ambience.mp3';
+      case 'Cyberpunk Pink':
+        return 'sounds/synthwave.mp3';
+      case 'Volcano':
+        return 'sounds/lava_flow.mp3';
+      case 'Ocean Deep':
+        return 'sounds/deep_ocean.mp3';
+      case 'Enchanted Forest':
+        return 'sounds/magic_forest.mp3';
       case 'Nordic Night':
         return 'sounds/campfire.mp3';
       case 'Royal Velvet':

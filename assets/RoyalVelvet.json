@@ -53,7 +53,7 @@
         "labelLarge": {
             "size": 16.0,
             "weight": "bold",
-            "color": "0xFF2A004B"
+            "color": "0xFFFFFFFF"
         }
     }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ice_shield/ui_layer/notification_page/NotificationManagerPage.dart';
+
 import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
 import 'package:ice_shield/ui_layer/health_page/CaloriesPage.dart';
 import 'package:ice_shield/ui_layer/health_page/ExercisePage.dart';
@@ -235,6 +237,11 @@ final GoRouter router = GoRouter(
           path: "/project_notes",
           parentNavigatorKey: _shellNavigatorKey,
           builder: (context, state) => const ProjectNotesPage(),
+        ),
+        GoRoute(
+          path: '/notifications',
+          parentNavigatorKey: _shellNavigatorKey,
+          builder: (context, state) => const NotificationManagerPage(),
         ),
       ],
     ),

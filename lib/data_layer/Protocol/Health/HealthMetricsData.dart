@@ -3,6 +3,7 @@ import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
 import 'package:ice_shield/data_layer/DomainData/Plugin/GPSTracker/PersonProfile.dart';
 import 'package:ice_shield/ui_layer/health_page/models/HealthMetric.dart';
 import 'package:ice_shield/ui_layer/health_page/services/HealthService.dart';
+import 'package:ice_shield/initial_layer/CoreLogics/PowerPoint/Const.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:provider/provider.dart' show ReadContext;
 
@@ -165,8 +166,9 @@ class HealthMetricsData {
         icon: Icons.directions_walk,
         color: Color(0xFF4CAF50),
         unit: 'steps',
-        progress: 0.84,
-        subtitle: 'Goal: 10,000',
+        progress:
+            0.84, // This should ideally be dynamic too, but keeping as placeholder for default
+        subtitle: 'Goal: $STEP_GOAL',
         trend: '+12%',
         trendPositive: true,
         detailPage: '/health/steps',
@@ -191,7 +193,7 @@ class HealthMetricsData {
         color: Color(0xFF673AB7),
         unit: 'hours',
         progress: 0.94,
-        subtitle: 'Goal: 8 hours',
+        subtitle: 'Goal: $SLEEP_GOAL hours',
         trend: '+0.5h',
         trendPositive: true,
         detailPage: '/health/sleep',
@@ -203,8 +205,8 @@ class HealthMetricsData {
         icon: Icons.water_drop,
         color: Color(0xFF2196F3),
         unit: 'glasses',
-        progress: 0.75,
-        subtitle: 'Goal: 8 glasses',
+        progress: 0.75, // Placeholder
+        subtitle: 'Goal: $WATER_GOAL ml',
         trend: '0%',
         trendPositive: null,
       ),
@@ -216,7 +218,7 @@ class HealthMetricsData {
         color: Color(0xFFFF5722),
         unit: 'min',
         progress: 0.75,
-        subtitle: 'Goal: 60 min',
+        subtitle: 'Goal: $EXERCISE_GOAL min',
         trend: '+15min',
         trendPositive: true,
         detailPage: '/health/steps',
@@ -337,10 +339,10 @@ class HealthMetricsData {
     final ySteps = yesterdayMetrics?.steps ?? 0;
 
     // Goals
-    const stepGoal = 10000;
-    const waterGoal = 2000; // ml
-    const exerciseGoal = 60; // min
-    const sleepGoal = 8.0; // hours
+    const stepGoal = STEP_GOAL;
+    const waterGoal = WATER_GOAL; // ml
+    const exerciseGoal = EXERCISE_GOAL; // min
+    const sleepGoal = SLEEP_GOAL; // hours
 
     // 7. Build metric map
     return {

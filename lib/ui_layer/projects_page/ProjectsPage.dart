@@ -13,7 +13,6 @@ import 'package:signals_flutter/signals_flutter.dart';
 import 'TaskItem.dart';
 import 'CreateProjectDialog.dart';
 import 'package:ice_shield/ui_layer/ReusableWidget/SwipeablePage.dart';
-import 'package:auto_size_text/auto_size_text.dart';
 
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({super.key});
@@ -22,14 +21,23 @@ class ProjectsPage extends StatelessWidget {
     return MainButton(
       type: "projects",
       destination: "/projects",
-      size: size,
-      icon: Icons.add,
-      mainFunction: () {
+      mainFunction: () => context.go("/projects"),
+      onSwipeUp: () => context.go("/canvas"),
+      onSwipeRight: () {
+        if (Navigator.canPop(context)) {
+          context.pop();
+        } else {
+          context.go('/');
+        }
+      },
+      icon: Icons.rocket_launch_rounded,
+      onLongPress: () {
         showDialog(
           context: context,
           builder: (context) => const CreateProjectDialog(),
         );
       },
+      subButtons: [],
     );
   }
 
@@ -45,37 +53,25 @@ class ProjectsPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
-          title: SwipeablePage(
-            onSwipe: () => context.pop(),
-            child: AutoSizeText(
-              'Project Hub',
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-              maxLines: 1,
-            ),
-          ),
-          centerTitle: false,
-          backgroundColor: colorScheme.surface,
+          toolbarHeight: 70,
+          backgroundColor: Colors.transparent,
           elevation: 0,
+          leadingWidth: 0,
+          leading: const SizedBox.shrink(),
           actions: [
             IconButton(
-              icon: Icon(Icons.add, color: colorScheme.primary),
-              onPressed: () => showDialog(
-                context: context,
-                builder: (context) => const CreateProjectDialog(),
-              ),
+              icon: const Icon(Icons.home_rounded, size: 30),
+              onPressed: () => context.go('/'),
             ),
             IconButton(
-              icon: Icon(Icons.add_task, color: colorScheme.primary),
-              onPressed: () => _showAddTaskDialog(context, growthBlock),
+              icon: const Icon(Icons.grid_view, size: 30),
+              onPressed: () => context.go('/canvas'),
             ),
             IconButton(
-              icon: Icon(Icons.search, color: colorScheme.onSurface),
-              onPressed: () {},
+              icon: const Icon(Icons.settings, size: 30),
+              onPressed: () => context.go('/settings'),
             ),
+            const SizedBox(width: 8),
           ],
         ),
         body: CustomScrollView(

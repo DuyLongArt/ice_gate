@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 // ---------------------------------------------------------------------------
 // 1. Data Model for Sub-Buttons
@@ -41,6 +42,8 @@ class MainButton extends StatefulWidget {
   final VoidCallback mainFunction;
   final VoidCallback? doubleClickFunction;
   final VoidCallback? onSwipeUp;
+  final VoidCallback? onSwipeRight;
+  final VoidCallback? onLongPress;
 
   const MainButton({
     super.key,
@@ -56,6 +59,8 @@ class MainButton extends StatefulWidget {
     this.size,
     this.doubleClickFunction,
     this.onSwipeUp,
+    this.onSwipeRight,
+    this.onLongPress,
   });
 
   @override
@@ -273,6 +278,17 @@ class _MainButtonState extends State<MainButton>
     );
   }
 
+  void _handleSwipeRight() {
+    HapticFeedback.mediumImpact();
+    if (widget.onSwipeRight != null) {
+      widget.onSwipeRight!();
+    } else if (widget.doubleClickFunction != null) {
+      widget.doubleClickFunction!();
+    } else {
+      widget.mainFunction();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mainSize = widget.size ?? 56.0;
@@ -283,8 +299,16 @@ class _MainButtonState extends State<MainButton>
         opacity: isDialActive ? 0.0 : 1.0,
         child: GestureDetector(
           onTap: widget.mainFunction,
-          onLongPress: _showOverlay,
+          onLongPress: widget.onLongPress ?? _showOverlay,
           onDoubleTap: widget.doubleClickFunction,
+          onHorizontalDragEnd: (details) {
+            // Detect swipe right
+            if (details.primaryVelocity != null &&
+                details.primaryVelocity! > 300) {
+              _handleSwipeRight();
+            }
+          },
+
           onVerticalDragEnd: (details) {
             // Detect swipe up
             if (details.primaryVelocity != null &&

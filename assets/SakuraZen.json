@@ -8,22 +8,22 @@
         "onPrimary": "0xFFFFFFFF",
         "primaryContainer": "0xFFFCE4EC",
         "onPrimaryContainer": "0xFF880E4F",
-        "secondary": "0xFFF06292",
+        "secondary": "0xFFF48FB1",
         "onSecondary": "0xFFFFFFFF",
-        "surface": "0xFFFFF5F8",
-        "onSurface": "0xFF3F3B66",
-        "surfaceContainer": "0xFFFDEEF4",
+        "surface": "0xFFFFF0F5",
+        "onSurface": "0xFF880E4F",
+        "surfaceContainer": "0xFFF8BBD0",
         "outline": "0xFFF48FB1",
-        "outlineVariant": "0xFFF8BBD0"
+        "outlineVariant": "0xFFFCE4EC"
     },
     "components": {
         "appBar": {
-            "backgroundColor": "0xFFFFF5F8",
-            "foregroundColor": "0xFFE91E63",
+            "backgroundColor": "0xFFFCE4EC",
+            "foregroundColor": "0xFF880E4F",
             "elevation": 0.0
         },
         "elevatedButton": {
-            "backgroundColor": "0xFFE91E63",
+            "backgroundColor": "0xFFF06292",
             "foregroundColor": "0xFFFFFFFF",
             "borderRadius": 24.0,
             "elevation": 1.0
@@ -34,7 +34,7 @@
             "borderRadius": 20.0
         },
         "icon": {
-            "color": "0xFFE91E63",
+            "color": "0xFFFFFFFF",
             "size": 24.0
         }
     },
@@ -43,12 +43,12 @@
         "headlineLarge": {
             "size": 32.0,
             "weight": "bold",
-            "color": "0xFFE91E63"
+            "color": "0xFFFFFFFF"
         },
         "bodyMedium": {
             "size": 16.0,
             "weight": "normal",
-            "color": "0xFF3F3B66"
+            "color": "0xFFFFFFFF"
         },
         "labelLarge": {
             "size": 16.0,

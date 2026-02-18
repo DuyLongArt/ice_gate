@@ -14,9 +14,16 @@ class ThemeLayer extends StatefulWidget {
   // Define the future function to load the theme data, now returning ThemeData
   // ⚠️ ASSUMPTION: ThemeAdapter.parse can return ThemeData
   Future<ThemeData> _loadTheme() async {
-    // Use the actual path declared in pubspec.yaml
-    // Assuming ThemeAdapter.parse is adapted to return a standard ThemeData
-    return await ThemeAdapter.parse("assets/CurrentTheme.json");
+    try {
+      // Try to load the saved theme configuration
+      return await ThemeAdapter.parse("assets/CurrentTheme.json");
+    } catch (e) {
+      print(
+        "Warning: Could not load CurrentTheme.json ($e). Falling back to SakuraZen.",
+      );
+      // Fallback to a default theme if the specific file is missing/corrupt
+      return await ThemeAdapter.parse("assets/SakuraZen.json");
+    }
   }
 
   @override

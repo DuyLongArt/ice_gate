@@ -12,7 +12,7 @@ import 'package:ice_shield/ui_layer/finance_page/FinancePage.dart';
 import 'package:ice_shield/ui_layer/social_page/SocialPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
 
-import 'package:ice_shield/ui_layer/home_page/IceGateAppBar.dart';
+import 'package:ice_shield/ui_layer/canvas_page/CanvasDynamicIsland.dart';
 
 class MainShell extends StatelessWidget {
   final Widget child;
@@ -99,19 +99,42 @@ class MainShell extends StatelessWidget {
 
     final bool shouldHideAppBar =
         currentRoute == '/projects/focus' ||
+        currentRoute == '/health/focus' ||
+        currentRoute == '/notifications' ||
+        currentRoute == '/personal-info' ||
+        currentRoute == '/profile' ||
         currentRoute.startsWith('/widgets/webview');
 
     return Scaffold(
-      // --- PERSISTENT APP BAR (Hidden for Focus Page & WebView) ---
-      appBar: shouldHideAppBar ? null : const IceGateAppBar(),
-
       // --- DYNAMIC BODY (Changes based on route) ---
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(bottom: 20.0, top: 10),
         child: _getMainButtonForRoute(context, currentRoute),
       ),
 
-      body: child,
+      body: Stack(
+        children: [
+          child,
+          if (!shouldHideAppBar)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: SizedBox(
+                  height: 70, // Match AppBar toolbarHeight after user change
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: const CanvasDynamicIsland(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
