@@ -6,8 +6,10 @@ import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
 import 'package:ice_shield/ui_layer/widget_page/AddPluginForm.dart';
 import 'package:provider/provider.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManagerBlock.dart';
+import 'package:flutter/services.dart';
+import 'package:ice_shield/ui_layer/notification_page/NotificationManagerPage.dart';
+import 'package:ice_shield/ui_layer/canvas_page/GoalConfigurationWidget.dart';
 import 'dart:ui';
-import 'InternalDragIconWidget.dart'; // The Grid Cell
 import 'StoreWidget.dart'; // The Bottom Bar
 import 'package:ice_shield/ui_layer/canvas_page/CanvasDynamicIsland.dart';
 
@@ -61,7 +63,11 @@ class DragCanvasGrid extends StatefulWidget {
           ),
         ),
       ),
-      mainFunction: toggleStore,
+      mainFunction:() {
+        toggleStore();
+        HapticFeedback.heavyImpact();
+        }
+        ,
     );
   }
 
@@ -88,6 +94,15 @@ class _DragCanvasGridState extends State<DragCanvasGrid> {
 
     return Scaffold(
       backgroundColor: baseColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading:
+            false, // CanvasDynamicIsland has its own back button
+        title: const CanvasDynamicIsland(),
+      ),
+      extendBodyBehindAppBar: true,
       body: SafeArea(
         bottom: false,
         child: DragCanvas(baseColor: baseColor, isDark: isDark),
@@ -119,12 +134,8 @@ class _DragCanvasState extends State<DragCanvas> {
 
   @override
   Widget build(BuildContext context) {
-    final widgetBlock = Provider.of<WidgetManagerBlock>(context, listen: false);
-
     return Column(
       children: [
-        const SizedBox(height: 12),
-        const Center(child: CanvasDynamicIsland()),
         const SizedBox(height: 10),
 
         Expanded(
@@ -155,30 +166,46 @@ class _DragCanvasState extends State<DragCanvas> {
                     ),
                   ),
                   Watch((context) {
-                    return GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                    return ListView(
+                      padding: const EdgeInsets.all(24),
                       physics: const BouncingScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            childAspectRatio: 1.0,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                          ),
-                      itemCount: widgetBlock.widgets.length,
-                      itemBuilder: (context, index) {
-                        return LayoutBuilder(
-                          builder: (context, constraints) {
-                            return InternalDragIconWidget(
-                              index: index,
-                              store: widgetBlock,
-                              widthCard: constraints.maxWidth,
-                              heightCard: constraints.maxHeight,
-                              name: widgetBlock.widgets[index].name,
+                      children: [
+                        _buildEntryCard(
+                          context: context,
+                          title: "Notification Center",
+                          subtitle: "Manage your alerts and focus history",
+                          icon: Icons.notifications_active_rounded,
+                          color: Colors.blueAccent,
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const NotificationManagerPage(),
+                              ),
                             );
                           },
-                        );
-                      },
+                        ),
+                        const SizedBox(height: 20),
+                        _buildEntryCard(
+                          context: context,
+                          title: "Goal Center",
+                          subtitle: "Track your daily health evolution",
+                          icon: Icons.track_changes_rounded,
+                          color: Colors.orangeAccent,
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const GoalConfigurationWidget(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     );
                   }),
                 ],
@@ -210,6 +237,77 @@ class _DragCanvasState extends State<DragCanvas> {
           );
         }),
       ],
+    );
+  }
+
+  Widget _buildEntryCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withOpacity(0.3), width: 1),
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.white.withOpacity(0.3),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

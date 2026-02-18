@@ -133,7 +133,9 @@ class FocusBlock {
         // This ensures the lock screen controls appear even for silent sessions or failed assets
         try {
           await _updateAudioSource();
-          _audioHandler?.play();
+          if (isRunning.value) {
+            _audioHandler?.play();
+          }
         } catch (audioError) {
           print(
             "FocusBlock: Audio setup failed ($audioError), proceeding with silent timer.",
@@ -143,11 +145,11 @@ class FocusBlock {
       }
 
       // ALWAYS show status notification to satisfy "both must show" requirement
-      _notificationService?.showNotification(
-        888,
-        "Focus Session Active",
-        "Stay focused! ${_formatTime(remainingTime.value)} remaining",
-      );
+      // _notificationService?.showNotification(
+      //   888,
+      //   "Focus Session Active",
+      //   "Stay focused! ${_formatTime(remainingTime.value)} remaining",
+      // );
     } catch (e) {
       print("FocusBlock startTimer error: $e");
     }
@@ -162,13 +164,20 @@ class FocusBlock {
       );
     }
 
-    print("FocusBlock: Starting Timer.periodic");
-    // Show initial notification immediately
-    _notificationService?.showNotification(
-      888,
-      "Focus Session Active",
-      "${_formatTime(remainingTime.value)} remaining",
-    );
+    // print("FocusBlock: Starting Timer.periodic");
+    // // Show initial notification immediately
+    // _notificationService?.showNotification(
+    //   888,
+    //   "Focus Session Active",
+    //   "${_formatTime(remainingTime.value)} remaining",
+    // );
+
+    if (!isRunning.value) {
+      print(
+        "FocusBlock: startTimer aborted early - user requested pause during setup.",
+      );
+      return;
+    }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingTime.value > 0) {
@@ -189,11 +198,7 @@ class FocusBlock {
         }
 
         // Update notification every second for a live countdown experience
-        _notificationService?.showNotification(
-          888,
-          "Focus Session Active",
-          "${_formatTime(remainingTime.value)} remaining",
-        );
+        
       } else {
         completeSession();
       }

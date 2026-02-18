@@ -21,7 +21,7 @@ class CustomAuthService {
         body: jsonEncode({'userName': identity, 'password': password}),
       );
 
-// TESTING
+      // TESTING
       if (response.statusCode != 200) {
         final data = jsonDecode(response.body);
         _logger.info('Login successful');
@@ -43,8 +43,8 @@ class CustomAuthService {
           "id": 1,
           "username": "mockUser",
           "email": "[EMAIL_ADDRESS]",
-          "role": "user"
-        }
+          "role": "user",
+        },
       };
       final data = jsonEncode(mockData);
       _logger.info('Login successful');
@@ -120,9 +120,7 @@ class CustomAuthService {
 
   /// Fetch current user profile from backend
   Future<Map<String, dynamic>> fetchCurrentUser(String token) async {
-    final url = Uri.parse(
-      '$baseUrl/backend/account/information',
-    ); // Common endpoint for profile
+    final url = Uri.parse('$baseUrl/backend/account/information');
     try {
       final response = await http.get(
         url,
@@ -132,18 +130,7 @@ class CustomAuthService {
         },
       );
 
-      if (response.statusCode == 200) {
-        if (response.body.isEmpty) {
-          _logger.warning('User profile fetched but body is empty');
-          return {};
-        }
-        return jsonDecode(response.body);
-      } else {
-        final error = response.body.isNotEmpty
-            ? jsonDecode(response.body)
-            : {'message': 'Unknown error'};
-        throw Exception(error['message'] ?? 'Failed to fetch user');
-      }
+      return _handleJsonResponse(response);
     } catch (e) {
       _logger.severe('Error fetching user: $e');
       throw Exception('Connection error: $e');
@@ -178,11 +165,7 @@ class CustomAuthService {
         },
       );
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to fetch person information');
-      }
+      return _handleJsonResponse(response);
     } catch (e) {
       _logger.severe('Error fetching person info: $e');
       throw Exception('Connection error: $e');
@@ -201,11 +184,7 @@ class CustomAuthService {
         },
       );
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('Failed to fetch details');
-      }
+      return _handleJsonResponse(response);
     } catch (e) {
       _logger.severe('Error fetching details: $e');
       throw Exception('Connection error: $e');
@@ -271,14 +250,48 @@ class CustomAuthService {
         },
       );
 
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as List<dynamic>;
-      } else {
-        throw Exception('Failed to fetch skills');
+      final dynamic data = _handleJsonResponse(response);
+      if (data is List) {
+        return data;
+      } else if (data is Map && data.containsKey('skills')) {
+        return data['skills'] as List<dynamic>;
       }
+      return [];
     } catch (e) {
       _logger.severe('Error fetching skills: $e');
       throw Exception('Connection error: $e');
+    }
+  }
+
+  /// Helper to handle JSON responses safely
+  dynamic _handleJsonResponse(http.Response response) {
+    _logger.info('Response status: ${response.statusCode}');
+    final contentType = response.headers['content-type'] ?? '';
+
+    if (!contentType.contains('application/json')) {
+      _logger.warning('Expected JSON but got: $contentType');
+      _logger.fine('Response body: ${response.body}');
+      throw Exception('Server returned non-JSON response ($contentType)');
+    }
+
+    if (response.body.isEmpty) {
+      return response.statusCode >= 200 && response.statusCode < 300
+          ? {}
+          : null;
+    }
+
+    try {
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return data;
+      } else {
+        throw Exception(
+          data['message'] ?? 'Request failed (${response.statusCode})',
+        );
+      }
+    } catch (e) {
+      _logger.severe('Failed to parse JSON response: $e');
+      throw Exception('Failed to parse server response');
     }
   }
 }

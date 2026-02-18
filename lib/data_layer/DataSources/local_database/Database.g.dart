@@ -95,6 +95,13 @@ mixin _$CustomNotificationDAOMixin on DatabaseAccessor<AppDatabase> {
   $CustomNotificationsTableTable get customNotificationsTable =>
       attachedDatabase.customNotificationsTable;
 }
+mixin _$HealthLogsDAOMixin on DatabaseAccessor<AppDatabase> {
+  $PersonsTableTable get personsTable => attachedDatabase.personsTable;
+  $WaterLogsTableTable get waterLogsTable => attachedDatabase.waterLogsTable;
+  $SleepLogsTableTable get sleepLogsTable => attachedDatabase.sleepLogsTable;
+  $ExerciseLogsTableTable get exerciseLogsTable =>
+      attachedDatabase.exerciseLogsTable;
+}
 
 class $ExternalWidgetsTableTable extends ExternalWidgetsTable
     with TableInfo<$ExternalWidgetsTableTable, ExternalWidgetData> {
@@ -15662,6 +15669,1068 @@ class QuotesTableCompanion extends UpdateCompanion<QuoteData> {
   }
 }
 
+class $WaterLogsTableTable extends WaterLogsTable
+    with TableInfo<$WaterLogsTableTable, WaterLogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WaterLogsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _logIDMeta = const VerificationMeta('logID');
+  @override
+  late final GeneratedColumn<int> logID = GeneratedColumn<int>(
+    'log_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _personIDMeta = const VerificationMeta(
+    'personID',
+  );
+  @override
+  late final GeneratedColumn<int> personID = GeneratedColumn<int>(
+    'person_i_d',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES persons_table (person_i_d) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
+  @override
+  late final GeneratedColumn<int> amount = GeneratedColumn<int>(
+    'amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [logID, personID, amount, timestamp];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'water_logs_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WaterLogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('log_i_d')) {
+      context.handle(
+        _logIDMeta,
+        logID.isAcceptableOrUnknown(data['log_i_d']!, _logIDMeta),
+      );
+    }
+    if (data.containsKey('person_i_d')) {
+      context.handle(
+        _personIDMeta,
+        personID.isAcceptableOrUnknown(data['person_i_d']!, _personIDMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIDMeta);
+    }
+    if (data.containsKey('amount')) {
+      context.handle(
+        _amountMeta,
+        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
+      );
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {logID};
+  @override
+  WaterLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WaterLogData(
+      logID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}log_i_d'],
+      )!,
+      personID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_i_d'],
+      )!,
+      amount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}amount'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+    );
+  }
+
+  @override
+  $WaterLogsTableTable createAlias(String alias) {
+    return $WaterLogsTableTable(attachedDatabase, alias);
+  }
+}
+
+class WaterLogData extends DataClass implements Insertable<WaterLogData> {
+  final int logID;
+  final int personID;
+  final int amount;
+  final DateTime timestamp;
+  const WaterLogData({
+    required this.logID,
+    required this.personID,
+    required this.amount,
+    required this.timestamp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['log_i_d'] = Variable<int>(logID);
+    map['person_i_d'] = Variable<int>(personID);
+    map['amount'] = Variable<int>(amount);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  WaterLogsTableCompanion toCompanion(bool nullToAbsent) {
+    return WaterLogsTableCompanion(
+      logID: Value(logID),
+      personID: Value(personID),
+      amount: Value(amount),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory WaterLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WaterLogData(
+      logID: serializer.fromJson<int>(json['logID']),
+      personID: serializer.fromJson<int>(json['personID']),
+      amount: serializer.fromJson<int>(json['amount']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'logID': serializer.toJson<int>(logID),
+      'personID': serializer.toJson<int>(personID),
+      'amount': serializer.toJson<int>(amount),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  WaterLogData copyWith({
+    int? logID,
+    int? personID,
+    int? amount,
+    DateTime? timestamp,
+  }) => WaterLogData(
+    logID: logID ?? this.logID,
+    personID: personID ?? this.personID,
+    amount: amount ?? this.amount,
+    timestamp: timestamp ?? this.timestamp,
+  );
+  WaterLogData copyWithCompanion(WaterLogsTableCompanion data) {
+    return WaterLogData(
+      logID: data.logID.present ? data.logID.value : this.logID,
+      personID: data.personID.present ? data.personID.value : this.personID,
+      amount: data.amount.present ? data.amount.value : this.amount,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterLogData(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('amount: $amount, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(logID, personID, amount, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WaterLogData &&
+          other.logID == this.logID &&
+          other.personID == this.personID &&
+          other.amount == this.amount &&
+          other.timestamp == this.timestamp);
+}
+
+class WaterLogsTableCompanion extends UpdateCompanion<WaterLogData> {
+  final Value<int> logID;
+  final Value<int> personID;
+  final Value<int> amount;
+  final Value<DateTime> timestamp;
+  const WaterLogsTableCompanion({
+    this.logID = const Value.absent(),
+    this.personID = const Value.absent(),
+    this.amount = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  });
+  WaterLogsTableCompanion.insert({
+    this.logID = const Value.absent(),
+    required int personID,
+    this.amount = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  }) : personID = Value(personID);
+  static Insertable<WaterLogData> custom({
+    Expression<int>? logID,
+    Expression<int>? personID,
+    Expression<int>? amount,
+    Expression<DateTime>? timestamp,
+  }) {
+    return RawValuesInsertable({
+      if (logID != null) 'log_i_d': logID,
+      if (personID != null) 'person_i_d': personID,
+      if (amount != null) 'amount': amount,
+      if (timestamp != null) 'timestamp': timestamp,
+    });
+  }
+
+  WaterLogsTableCompanion copyWith({
+    Value<int>? logID,
+    Value<int>? personID,
+    Value<int>? amount,
+    Value<DateTime>? timestamp,
+  }) {
+    return WaterLogsTableCompanion(
+      logID: logID ?? this.logID,
+      personID: personID ?? this.personID,
+      amount: amount ?? this.amount,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (logID.present) {
+      map['log_i_d'] = Variable<int>(logID.value);
+    }
+    if (personID.present) {
+      map['person_i_d'] = Variable<int>(personID.value);
+    }
+    if (amount.present) {
+      map['amount'] = Variable<int>(amount.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WaterLogsTableCompanion(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('amount: $amount, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SleepLogsTableTable extends SleepLogsTable
+    with TableInfo<$SleepLogsTableTable, SleepLogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SleepLogsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _logIDMeta = const VerificationMeta('logID');
+  @override
+  late final GeneratedColumn<int> logID = GeneratedColumn<int>(
+    'log_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _personIDMeta = const VerificationMeta(
+    'personID',
+  );
+  @override
+  late final GeneratedColumn<int> personID = GeneratedColumn<int>(
+    'person_i_d',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES persons_table (person_i_d) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _startTimeMeta = const VerificationMeta(
+    'startTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startTime = GeneratedColumn<DateTime>(
+    'start_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endTimeMeta = const VerificationMeta(
+    'endTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endTime = GeneratedColumn<DateTime>(
+    'end_time',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _qualityMeta = const VerificationMeta(
+    'quality',
+  );
+  @override
+  late final GeneratedColumn<int> quality = GeneratedColumn<int>(
+    'quality',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    logID,
+    personID,
+    startTime,
+    endTime,
+    quality,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sleep_logs_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SleepLogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('log_i_d')) {
+      context.handle(
+        _logIDMeta,
+        logID.isAcceptableOrUnknown(data['log_i_d']!, _logIDMeta),
+      );
+    }
+    if (data.containsKey('person_i_d')) {
+      context.handle(
+        _personIDMeta,
+        personID.isAcceptableOrUnknown(data['person_i_d']!, _personIDMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIDMeta);
+    }
+    if (data.containsKey('start_time')) {
+      context.handle(
+        _startTimeMeta,
+        startTime.isAcceptableOrUnknown(data['start_time']!, _startTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startTimeMeta);
+    }
+    if (data.containsKey('end_time')) {
+      context.handle(
+        _endTimeMeta,
+        endTime.isAcceptableOrUnknown(data['end_time']!, _endTimeMeta),
+      );
+    }
+    if (data.containsKey('quality')) {
+      context.handle(
+        _qualityMeta,
+        quality.isAcceptableOrUnknown(data['quality']!, _qualityMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {logID};
+  @override
+  SleepLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SleepLogData(
+      logID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}log_i_d'],
+      )!,
+      personID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_i_d'],
+      )!,
+      startTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_time'],
+      )!,
+      endTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_time'],
+      ),
+      quality: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}quality'],
+      )!,
+    );
+  }
+
+  @override
+  $SleepLogsTableTable createAlias(String alias) {
+    return $SleepLogsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SleepLogData extends DataClass implements Insertable<SleepLogData> {
+  final int logID;
+  final int personID;
+  final DateTime startTime;
+  final DateTime? endTime;
+  final int quality;
+  const SleepLogData({
+    required this.logID,
+    required this.personID,
+    required this.startTime,
+    this.endTime,
+    required this.quality,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['log_i_d'] = Variable<int>(logID);
+    map['person_i_d'] = Variable<int>(personID);
+    map['start_time'] = Variable<DateTime>(startTime);
+    if (!nullToAbsent || endTime != null) {
+      map['end_time'] = Variable<DateTime>(endTime);
+    }
+    map['quality'] = Variable<int>(quality);
+    return map;
+  }
+
+  SleepLogsTableCompanion toCompanion(bool nullToAbsent) {
+    return SleepLogsTableCompanion(
+      logID: Value(logID),
+      personID: Value(personID),
+      startTime: Value(startTime),
+      endTime: endTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endTime),
+      quality: Value(quality),
+    );
+  }
+
+  factory SleepLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SleepLogData(
+      logID: serializer.fromJson<int>(json['logID']),
+      personID: serializer.fromJson<int>(json['personID']),
+      startTime: serializer.fromJson<DateTime>(json['startTime']),
+      endTime: serializer.fromJson<DateTime?>(json['endTime']),
+      quality: serializer.fromJson<int>(json['quality']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'logID': serializer.toJson<int>(logID),
+      'personID': serializer.toJson<int>(personID),
+      'startTime': serializer.toJson<DateTime>(startTime),
+      'endTime': serializer.toJson<DateTime?>(endTime),
+      'quality': serializer.toJson<int>(quality),
+    };
+  }
+
+  SleepLogData copyWith({
+    int? logID,
+    int? personID,
+    DateTime? startTime,
+    Value<DateTime?> endTime = const Value.absent(),
+    int? quality,
+  }) => SleepLogData(
+    logID: logID ?? this.logID,
+    personID: personID ?? this.personID,
+    startTime: startTime ?? this.startTime,
+    endTime: endTime.present ? endTime.value : this.endTime,
+    quality: quality ?? this.quality,
+  );
+  SleepLogData copyWithCompanion(SleepLogsTableCompanion data) {
+    return SleepLogData(
+      logID: data.logID.present ? data.logID.value : this.logID,
+      personID: data.personID.present ? data.personID.value : this.personID,
+      startTime: data.startTime.present ? data.startTime.value : this.startTime,
+      endTime: data.endTime.present ? data.endTime.value : this.endTime,
+      quality: data.quality.present ? data.quality.value : this.quality,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SleepLogData(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('quality: $quality')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(logID, personID, startTime, endTime, quality);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SleepLogData &&
+          other.logID == this.logID &&
+          other.personID == this.personID &&
+          other.startTime == this.startTime &&
+          other.endTime == this.endTime &&
+          other.quality == this.quality);
+}
+
+class SleepLogsTableCompanion extends UpdateCompanion<SleepLogData> {
+  final Value<int> logID;
+  final Value<int> personID;
+  final Value<DateTime> startTime;
+  final Value<DateTime?> endTime;
+  final Value<int> quality;
+  const SleepLogsTableCompanion({
+    this.logID = const Value.absent(),
+    this.personID = const Value.absent(),
+    this.startTime = const Value.absent(),
+    this.endTime = const Value.absent(),
+    this.quality = const Value.absent(),
+  });
+  SleepLogsTableCompanion.insert({
+    this.logID = const Value.absent(),
+    required int personID,
+    required DateTime startTime,
+    this.endTime = const Value.absent(),
+    this.quality = const Value.absent(),
+  }) : personID = Value(personID),
+       startTime = Value(startTime);
+  static Insertable<SleepLogData> custom({
+    Expression<int>? logID,
+    Expression<int>? personID,
+    Expression<DateTime>? startTime,
+    Expression<DateTime>? endTime,
+    Expression<int>? quality,
+  }) {
+    return RawValuesInsertable({
+      if (logID != null) 'log_i_d': logID,
+      if (personID != null) 'person_i_d': personID,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+      if (quality != null) 'quality': quality,
+    });
+  }
+
+  SleepLogsTableCompanion copyWith({
+    Value<int>? logID,
+    Value<int>? personID,
+    Value<DateTime>? startTime,
+    Value<DateTime?>? endTime,
+    Value<int>? quality,
+  }) {
+    return SleepLogsTableCompanion(
+      logID: logID ?? this.logID,
+      personID: personID ?? this.personID,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      quality: quality ?? this.quality,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (logID.present) {
+      map['log_i_d'] = Variable<int>(logID.value);
+    }
+    if (personID.present) {
+      map['person_i_d'] = Variable<int>(personID.value);
+    }
+    if (startTime.present) {
+      map['start_time'] = Variable<DateTime>(startTime.value);
+    }
+    if (endTime.present) {
+      map['end_time'] = Variable<DateTime>(endTime.value);
+    }
+    if (quality.present) {
+      map['quality'] = Variable<int>(quality.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SleepLogsTableCompanion(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('startTime: $startTime, ')
+          ..write('endTime: $endTime, ')
+          ..write('quality: $quality')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExerciseLogsTableTable extends ExerciseLogsTable
+    with TableInfo<$ExerciseLogsTableTable, ExerciseLogData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExerciseLogsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _logIDMeta = const VerificationMeta('logID');
+  @override
+  late final GeneratedColumn<int> logID = GeneratedColumn<int>(
+    'log_i_d',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _personIDMeta = const VerificationMeta(
+    'personID',
+  );
+  @override
+  late final GeneratedColumn<int> personID = GeneratedColumn<int>(
+    'person_i_d',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES persons_table (person_i_d) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _durationMinutesMeta = const VerificationMeta(
+    'durationMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> durationMinutes = GeneratedColumn<int>(
+    'duration_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _intensityMeta = const VerificationMeta(
+    'intensity',
+  );
+  @override
+  late final GeneratedColumn<String> intensity = GeneratedColumn<String>(
+    'intensity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('medium'),
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    logID,
+    personID,
+    type,
+    durationMinutes,
+    intensity,
+    timestamp,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exercise_logs_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExerciseLogData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('log_i_d')) {
+      context.handle(
+        _logIDMeta,
+        logID.isAcceptableOrUnknown(data['log_i_d']!, _logIDMeta),
+      );
+    }
+    if (data.containsKey('person_i_d')) {
+      context.handle(
+        _personIDMeta,
+        personID.isAcceptableOrUnknown(data['person_i_d']!, _personIDMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIDMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('duration_minutes')) {
+      context.handle(
+        _durationMinutesMeta,
+        durationMinutes.isAcceptableOrUnknown(
+          data['duration_minutes']!,
+          _durationMinutesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_durationMinutesMeta);
+    }
+    if (data.containsKey('intensity')) {
+      context.handle(
+        _intensityMeta,
+        intensity.isAcceptableOrUnknown(data['intensity']!, _intensityMeta),
+      );
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {logID};
+  @override
+  ExerciseLogData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExerciseLogData(
+      logID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}log_i_d'],
+      )!,
+      personID: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_i_d'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      durationMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_minutes'],
+      )!,
+      intensity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}intensity'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+    );
+  }
+
+  @override
+  $ExerciseLogsTableTable createAlias(String alias) {
+    return $ExerciseLogsTableTable(attachedDatabase, alias);
+  }
+}
+
+class ExerciseLogData extends DataClass implements Insertable<ExerciseLogData> {
+  final int logID;
+  final int personID;
+  final String type;
+  final int durationMinutes;
+  final String intensity;
+  final DateTime timestamp;
+  const ExerciseLogData({
+    required this.logID,
+    required this.personID,
+    required this.type,
+    required this.durationMinutes,
+    required this.intensity,
+    required this.timestamp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['log_i_d'] = Variable<int>(logID);
+    map['person_i_d'] = Variable<int>(personID);
+    map['type'] = Variable<String>(type);
+    map['duration_minutes'] = Variable<int>(durationMinutes);
+    map['intensity'] = Variable<String>(intensity);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  ExerciseLogsTableCompanion toCompanion(bool nullToAbsent) {
+    return ExerciseLogsTableCompanion(
+      logID: Value(logID),
+      personID: Value(personID),
+      type: Value(type),
+      durationMinutes: Value(durationMinutes),
+      intensity: Value(intensity),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory ExerciseLogData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExerciseLogData(
+      logID: serializer.fromJson<int>(json['logID']),
+      personID: serializer.fromJson<int>(json['personID']),
+      type: serializer.fromJson<String>(json['type']),
+      durationMinutes: serializer.fromJson<int>(json['durationMinutes']),
+      intensity: serializer.fromJson<String>(json['intensity']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'logID': serializer.toJson<int>(logID),
+      'personID': serializer.toJson<int>(personID),
+      'type': serializer.toJson<String>(type),
+      'durationMinutes': serializer.toJson<int>(durationMinutes),
+      'intensity': serializer.toJson<String>(intensity),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  ExerciseLogData copyWith({
+    int? logID,
+    int? personID,
+    String? type,
+    int? durationMinutes,
+    String? intensity,
+    DateTime? timestamp,
+  }) => ExerciseLogData(
+    logID: logID ?? this.logID,
+    personID: personID ?? this.personID,
+    type: type ?? this.type,
+    durationMinutes: durationMinutes ?? this.durationMinutes,
+    intensity: intensity ?? this.intensity,
+    timestamp: timestamp ?? this.timestamp,
+  );
+  ExerciseLogData copyWithCompanion(ExerciseLogsTableCompanion data) {
+    return ExerciseLogData(
+      logID: data.logID.present ? data.logID.value : this.logID,
+      personID: data.personID.present ? data.personID.value : this.personID,
+      type: data.type.present ? data.type.value : this.type,
+      durationMinutes: data.durationMinutes.present
+          ? data.durationMinutes.value
+          : this.durationMinutes,
+      intensity: data.intensity.present ? data.intensity.value : this.intensity,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseLogData(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('type: $type, ')
+          ..write('durationMinutes: $durationMinutes, ')
+          ..write('intensity: $intensity, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(logID, personID, type, durationMinutes, intensity, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExerciseLogData &&
+          other.logID == this.logID &&
+          other.personID == this.personID &&
+          other.type == this.type &&
+          other.durationMinutes == this.durationMinutes &&
+          other.intensity == this.intensity &&
+          other.timestamp == this.timestamp);
+}
+
+class ExerciseLogsTableCompanion extends UpdateCompanion<ExerciseLogData> {
+  final Value<int> logID;
+  final Value<int> personID;
+  final Value<String> type;
+  final Value<int> durationMinutes;
+  final Value<String> intensity;
+  final Value<DateTime> timestamp;
+  const ExerciseLogsTableCompanion({
+    this.logID = const Value.absent(),
+    this.personID = const Value.absent(),
+    this.type = const Value.absent(),
+    this.durationMinutes = const Value.absent(),
+    this.intensity = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  });
+  ExerciseLogsTableCompanion.insert({
+    this.logID = const Value.absent(),
+    required int personID,
+    required String type,
+    required int durationMinutes,
+    this.intensity = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  }) : personID = Value(personID),
+       type = Value(type),
+       durationMinutes = Value(durationMinutes);
+  static Insertable<ExerciseLogData> custom({
+    Expression<int>? logID,
+    Expression<int>? personID,
+    Expression<String>? type,
+    Expression<int>? durationMinutes,
+    Expression<String>? intensity,
+    Expression<DateTime>? timestamp,
+  }) {
+    return RawValuesInsertable({
+      if (logID != null) 'log_i_d': logID,
+      if (personID != null) 'person_i_d': personID,
+      if (type != null) 'type': type,
+      if (durationMinutes != null) 'duration_minutes': durationMinutes,
+      if (intensity != null) 'intensity': intensity,
+      if (timestamp != null) 'timestamp': timestamp,
+    });
+  }
+
+  ExerciseLogsTableCompanion copyWith({
+    Value<int>? logID,
+    Value<int>? personID,
+    Value<String>? type,
+    Value<int>? durationMinutes,
+    Value<String>? intensity,
+    Value<DateTime>? timestamp,
+  }) {
+    return ExerciseLogsTableCompanion(
+      logID: logID ?? this.logID,
+      personID: personID ?? this.personID,
+      type: type ?? this.type,
+      durationMinutes: durationMinutes ?? this.durationMinutes,
+      intensity: intensity ?? this.intensity,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (logID.present) {
+      map['log_i_d'] = Variable<int>(logID.value);
+    }
+    if (personID.present) {
+      map['person_i_d'] = Variable<int>(personID.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (durationMinutes.present) {
+      map['duration_minutes'] = Variable<int>(durationMinutes.value);
+    }
+    if (intensity.present) {
+      map['intensity'] = Variable<String>(intensity.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExerciseLogsTableCompanion(')
+          ..write('logID: $logID, ')
+          ..write('personID: $personID, ')
+          ..write('type: $type, ')
+          ..write('durationMinutes: $durationMinutes, ')
+          ..write('intensity: $intensity, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -15705,6 +16774,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CustomNotificationsTableTable customNotificationsTable =
       $CustomNotificationsTableTable(this);
   late final $QuotesTableTable quotesTable = $QuotesTableTable(this);
+  late final $WaterLogsTableTable waterLogsTable = $WaterLogsTableTable(this);
+  late final $SleepLogsTableTable sleepLogsTable = $SleepLogsTableTable(this);
+  late final $ExerciseLogsTableTable exerciseLogsTable =
+      $ExerciseLogsTableTable(this);
   late final ThemesTableDAO themesTableDAO = ThemesTableDAO(
     this as AppDatabase,
   );
@@ -15739,6 +16812,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CustomNotificationDAO customNotificationDAO =
       CustomNotificationDAO(this as AppDatabase);
   late final QuoteDAO quoteDAO = QuoteDAO(this as AppDatabase);
+  late final HealthLogsDAO healthLogsDAO = HealthLogsDAO(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15771,6 +16845,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     focusSessionsTable,
     customNotificationsTable,
     quotesTable,
+    waterLogsTable,
+    sleepLogsTable,
+    exerciseLogsTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -15929,6 +17006,27 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('focus_sessions_table', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'persons_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('water_logs_table', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'persons_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('sleep_logs_table', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'persons_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('exercise_logs_table', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -17102,6 +18200,78 @@ final class $$PersonsTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$WaterLogsTableTable, List<WaterLogData>>
+  _waterLogsTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.waterLogsTable,
+    aliasName: $_aliasNameGenerator(
+      db.personsTable.personID,
+      db.waterLogsTable.personID,
+    ),
+  );
+
+  $$WaterLogsTableTableProcessedTableManager get waterLogsTableRefs {
+    final manager = $$WaterLogsTableTableTableManager($_db, $_db.waterLogsTable)
+        .filter(
+          (f) =>
+              f.personID.personID.sqlEquals($_itemColumn<int>('person_i_d')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_waterLogsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SleepLogsTableTable, List<SleepLogData>>
+  _sleepLogsTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.sleepLogsTable,
+    aliasName: $_aliasNameGenerator(
+      db.personsTable.personID,
+      db.sleepLogsTable.personID,
+    ),
+  );
+
+  $$SleepLogsTableTableProcessedTableManager get sleepLogsTableRefs {
+    final manager = $$SleepLogsTableTableTableManager($_db, $_db.sleepLogsTable)
+        .filter(
+          (f) =>
+              f.personID.personID.sqlEquals($_itemColumn<int>('person_i_d')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(_sleepLogsTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ExerciseLogsTableTable, List<ExerciseLogData>>
+  _exerciseLogsTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.exerciseLogsTable,
+        aliasName: $_aliasNameGenerator(
+          db.personsTable.personID,
+          db.exerciseLogsTable.personID,
+        ),
+      );
+
+  $$ExerciseLogsTableTableProcessedTableManager get exerciseLogsTableRefs {
+    final manager =
+        $$ExerciseLogsTableTableTableManager(
+          $_db,
+          $_db.exerciseLogsTable,
+        ).filter(
+          (f) =>
+              f.personID.personID.sqlEquals($_itemColumn<int>('person_i_d')!),
+        );
+
+    final cache = $_typedResult.readTableOrNull(
+      _exerciseLogsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PersonsTableTableFilterComposer
@@ -17590,6 +18760,81 @@ class $$PersonsTableTableFilterComposer
           }) => $$FocusSessionsTableTableFilterComposer(
             $db: $db,
             $table: $db.focusSessionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> waterLogsTableRefs(
+    Expression<bool> Function($$WaterLogsTableTableFilterComposer f) f,
+  ) {
+    final $$WaterLogsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.waterLogsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WaterLogsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.waterLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> sleepLogsTableRefs(
+    Expression<bool> Function($$SleepLogsTableTableFilterComposer f) f,
+  ) {
+    final $$SleepLogsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.sleepLogsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SleepLogsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.sleepLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> exerciseLogsTableRefs(
+    Expression<bool> Function($$ExerciseLogsTableTableFilterComposer f) f,
+  ) {
+    final $$ExerciseLogsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.exerciseLogsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ExerciseLogsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.exerciseLogsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -18155,6 +19400,82 @@ class $$PersonsTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> waterLogsTableRefs<T extends Object>(
+    Expression<T> Function($$WaterLogsTableTableAnnotationComposer a) f,
+  ) {
+    final $$WaterLogsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.waterLogsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WaterLogsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.waterLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> sleepLogsTableRefs<T extends Object>(
+    Expression<T> Function($$SleepLogsTableTableAnnotationComposer a) f,
+  ) {
+    final $$SleepLogsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.sleepLogsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SleepLogsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sleepLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> exerciseLogsTableRefs<T extends Object>(
+    Expression<T> Function($$ExerciseLogsTableTableAnnotationComposer a) f,
+  ) {
+    final $$ExerciseLogsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.personID,
+          referencedTable: $db.exerciseLogsTable,
+          getReferencedColumn: (t) => t.personID,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ExerciseLogsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.exerciseLogsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$PersonsTableTableTableManager
@@ -18188,6 +19509,9 @@ class $$PersonsTableTableTableManager
             bool scoresTableRefs,
             bool transactionsTableRefs,
             bool focusSessionsTableRefs,
+            bool waterLogsTableRefs,
+            bool sleepLogsTableRefs,
+            bool exerciseLogsTableRefs,
           })
         > {
   $$PersonsTableTableTableManager(_$AppDatabase db, $PersonsTableTable table)
@@ -18284,6 +19608,9 @@ class $$PersonsTableTableTableManager
                 scoresTableRefs = false,
                 transactionsTableRefs = false,
                 focusSessionsTableRefs = false,
+                waterLogsTableRefs = false,
+                sleepLogsTableRefs = false,
+                exerciseLogsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -18305,6 +19632,9 @@ class $$PersonsTableTableTableManager
                     if (scoresTableRefs) db.scoresTable,
                     if (transactionsTableRefs) db.transactionsTable,
                     if (focusSessionsTableRefs) db.focusSessionsTable,
+                    if (waterLogsTableRefs) db.waterLogsTable,
+                    if (sleepLogsTableRefs) db.sleepLogsTable,
+                    if (exerciseLogsTableRefs) db.exerciseLogsTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -18666,6 +19996,69 @@ class $$PersonsTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (waterLogsTableRefs)
+                        await $_getPrefetchedData<
+                          PersonData,
+                          $PersonsTableTable,
+                          WaterLogData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PersonsTableTableReferences
+                              ._waterLogsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PersonsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).waterLogsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personID == item.personID,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (sleepLogsTableRefs)
+                        await $_getPrefetchedData<
+                          PersonData,
+                          $PersonsTableTable,
+                          SleepLogData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PersonsTableTableReferences
+                              ._sleepLogsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PersonsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sleepLogsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personID == item.personID,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (exerciseLogsTableRefs)
+                        await $_getPrefetchedData<
+                          PersonData,
+                          $PersonsTableTable,
+                          ExerciseLogData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PersonsTableTableReferences
+                              ._exerciseLogsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PersonsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).exerciseLogsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personID == item.personID,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -18704,6 +20097,9 @@ typedef $$PersonsTableTableProcessedTableManager =
         bool scoresTableRefs,
         bool transactionsTableRefs,
         bool focusSessionsTableRefs,
+        bool waterLogsTableRefs,
+        bool sleepLogsTableRefs,
+        bool exerciseLogsTableRefs,
       })
     >;
 typedef $$ProjectsTableTableCreateCompanionBuilder =
@@ -28837,6 +30233,986 @@ typedef $$QuotesTableTableProcessedTableManager =
       QuoteData,
       PrefetchHooks Function()
     >;
+typedef $$WaterLogsTableTableCreateCompanionBuilder =
+    WaterLogsTableCompanion Function({
+      Value<int> logID,
+      required int personID,
+      Value<int> amount,
+      Value<DateTime> timestamp,
+    });
+typedef $$WaterLogsTableTableUpdateCompanionBuilder =
+    WaterLogsTableCompanion Function({
+      Value<int> logID,
+      Value<int> personID,
+      Value<int> amount,
+      Value<DateTime> timestamp,
+    });
+
+final class $$WaterLogsTableTableReferences
+    extends BaseReferences<_$AppDatabase, $WaterLogsTableTable, WaterLogData> {
+  $$WaterLogsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PersonsTableTable _personIDTable(_$AppDatabase db) =>
+      db.personsTable.createAlias(
+        $_aliasNameGenerator(
+          db.waterLogsTable.personID,
+          db.personsTable.personID,
+        ),
+      );
+
+  $$PersonsTableTableProcessedTableManager get personID {
+    final $_column = $_itemColumn<int>('person_i_d')!;
+
+    final manager = $$PersonsTableTableTableManager(
+      $_db,
+      $_db.personsTable,
+    ).filter((f) => f.personID.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_personIDTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$WaterLogsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $WaterLogsTableTable> {
+  $$WaterLogsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PersonsTableTableFilterComposer get personID {
+    final $$PersonsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WaterLogsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $WaterLogsTableTable> {
+  $$WaterLogsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get amount => $composableBuilder(
+    column: $table.amount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PersonsTableTableOrderingComposer get personID {
+    final $$PersonsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WaterLogsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WaterLogsTableTable> {
+  $$WaterLogsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get logID =>
+      $composableBuilder(column: $table.logID, builder: (column) => column);
+
+  GeneratedColumn<int> get amount =>
+      $composableBuilder(column: $table.amount, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  $$PersonsTableTableAnnotationComposer get personID {
+    final $$PersonsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WaterLogsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WaterLogsTableTable,
+          WaterLogData,
+          $$WaterLogsTableTableFilterComposer,
+          $$WaterLogsTableTableOrderingComposer,
+          $$WaterLogsTableTableAnnotationComposer,
+          $$WaterLogsTableTableCreateCompanionBuilder,
+          $$WaterLogsTableTableUpdateCompanionBuilder,
+          (WaterLogData, $$WaterLogsTableTableReferences),
+          WaterLogData,
+          PrefetchHooks Function({bool personID})
+        > {
+  $$WaterLogsTableTableTableManager(
+    _$AppDatabase db,
+    $WaterLogsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WaterLogsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WaterLogsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WaterLogsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                Value<int> personID = const Value.absent(),
+                Value<int> amount = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+              }) => WaterLogsTableCompanion(
+                logID: logID,
+                personID: personID,
+                amount: amount,
+                timestamp: timestamp,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                required int personID,
+                Value<int> amount = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+              }) => WaterLogsTableCompanion.insert(
+                logID: logID,
+                personID: personID,
+                amount: amount,
+                timestamp: timestamp,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WaterLogsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({personID = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (personID) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.personID,
+                                referencedTable: $$WaterLogsTableTableReferences
+                                    ._personIDTable(db),
+                                referencedColumn:
+                                    $$WaterLogsTableTableReferences
+                                        ._personIDTable(db)
+                                        .personID,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WaterLogsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WaterLogsTableTable,
+      WaterLogData,
+      $$WaterLogsTableTableFilterComposer,
+      $$WaterLogsTableTableOrderingComposer,
+      $$WaterLogsTableTableAnnotationComposer,
+      $$WaterLogsTableTableCreateCompanionBuilder,
+      $$WaterLogsTableTableUpdateCompanionBuilder,
+      (WaterLogData, $$WaterLogsTableTableReferences),
+      WaterLogData,
+      PrefetchHooks Function({bool personID})
+    >;
+typedef $$SleepLogsTableTableCreateCompanionBuilder =
+    SleepLogsTableCompanion Function({
+      Value<int> logID,
+      required int personID,
+      required DateTime startTime,
+      Value<DateTime?> endTime,
+      Value<int> quality,
+    });
+typedef $$SleepLogsTableTableUpdateCompanionBuilder =
+    SleepLogsTableCompanion Function({
+      Value<int> logID,
+      Value<int> personID,
+      Value<DateTime> startTime,
+      Value<DateTime?> endTime,
+      Value<int> quality,
+    });
+
+final class $$SleepLogsTableTableReferences
+    extends BaseReferences<_$AppDatabase, $SleepLogsTableTable, SleepLogData> {
+  $$SleepLogsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PersonsTableTable _personIDTable(_$AppDatabase db) =>
+      db.personsTable.createAlias(
+        $_aliasNameGenerator(
+          db.sleepLogsTable.personID,
+          db.personsTable.personID,
+        ),
+      );
+
+  $$PersonsTableTableProcessedTableManager get personID {
+    final $_column = $_itemColumn<int>('person_i_d')!;
+
+    final manager = $$PersonsTableTableTableManager(
+      $_db,
+      $_db.personsTable,
+    ).filter((f) => f.personID.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_personIDTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SleepLogsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SleepLogsTableTable> {
+  $$SleepLogsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PersonsTableTableFilterComposer get personID {
+    final $$PersonsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SleepLogsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SleepLogsTableTable> {
+  $$SleepLogsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startTime => $composableBuilder(
+    column: $table.startTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endTime => $composableBuilder(
+    column: $table.endTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get quality => $composableBuilder(
+    column: $table.quality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PersonsTableTableOrderingComposer get personID {
+    final $$PersonsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SleepLogsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SleepLogsTableTable> {
+  $$SleepLogsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get logID =>
+      $composableBuilder(column: $table.logID, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startTime =>
+      $composableBuilder(column: $table.startTime, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endTime =>
+      $composableBuilder(column: $table.endTime, builder: (column) => column);
+
+  GeneratedColumn<int> get quality =>
+      $composableBuilder(column: $table.quality, builder: (column) => column);
+
+  $$PersonsTableTableAnnotationComposer get personID {
+    final $$PersonsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SleepLogsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SleepLogsTableTable,
+          SleepLogData,
+          $$SleepLogsTableTableFilterComposer,
+          $$SleepLogsTableTableOrderingComposer,
+          $$SleepLogsTableTableAnnotationComposer,
+          $$SleepLogsTableTableCreateCompanionBuilder,
+          $$SleepLogsTableTableUpdateCompanionBuilder,
+          (SleepLogData, $$SleepLogsTableTableReferences),
+          SleepLogData,
+          PrefetchHooks Function({bool personID})
+        > {
+  $$SleepLogsTableTableTableManager(
+    _$AppDatabase db,
+    $SleepLogsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SleepLogsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SleepLogsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SleepLogsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                Value<int> personID = const Value.absent(),
+                Value<DateTime> startTime = const Value.absent(),
+                Value<DateTime?> endTime = const Value.absent(),
+                Value<int> quality = const Value.absent(),
+              }) => SleepLogsTableCompanion(
+                logID: logID,
+                personID: personID,
+                startTime: startTime,
+                endTime: endTime,
+                quality: quality,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                required int personID,
+                required DateTime startTime,
+                Value<DateTime?> endTime = const Value.absent(),
+                Value<int> quality = const Value.absent(),
+              }) => SleepLogsTableCompanion.insert(
+                logID: logID,
+                personID: personID,
+                startTime: startTime,
+                endTime: endTime,
+                quality: quality,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SleepLogsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({personID = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (personID) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.personID,
+                                referencedTable: $$SleepLogsTableTableReferences
+                                    ._personIDTable(db),
+                                referencedColumn:
+                                    $$SleepLogsTableTableReferences
+                                        ._personIDTable(db)
+                                        .personID,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SleepLogsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SleepLogsTableTable,
+      SleepLogData,
+      $$SleepLogsTableTableFilterComposer,
+      $$SleepLogsTableTableOrderingComposer,
+      $$SleepLogsTableTableAnnotationComposer,
+      $$SleepLogsTableTableCreateCompanionBuilder,
+      $$SleepLogsTableTableUpdateCompanionBuilder,
+      (SleepLogData, $$SleepLogsTableTableReferences),
+      SleepLogData,
+      PrefetchHooks Function({bool personID})
+    >;
+typedef $$ExerciseLogsTableTableCreateCompanionBuilder =
+    ExerciseLogsTableCompanion Function({
+      Value<int> logID,
+      required int personID,
+      required String type,
+      required int durationMinutes,
+      Value<String> intensity,
+      Value<DateTime> timestamp,
+    });
+typedef $$ExerciseLogsTableTableUpdateCompanionBuilder =
+    ExerciseLogsTableCompanion Function({
+      Value<int> logID,
+      Value<int> personID,
+      Value<String> type,
+      Value<int> durationMinutes,
+      Value<String> intensity,
+      Value<DateTime> timestamp,
+    });
+
+final class $$ExerciseLogsTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ExerciseLogsTableTable,
+          ExerciseLogData
+        > {
+  $$ExerciseLogsTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PersonsTableTable _personIDTable(_$AppDatabase db) =>
+      db.personsTable.createAlias(
+        $_aliasNameGenerator(
+          db.exerciseLogsTable.personID,
+          db.personsTable.personID,
+        ),
+      );
+
+  $$PersonsTableTableProcessedTableManager get personID {
+    final $_column = $_itemColumn<int>('person_i_d')!;
+
+    final manager = $$PersonsTableTableTableManager(
+      $_db,
+      $_db.personsTable,
+    ).filter((f) => f.personID.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_personIDTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ExerciseLogsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ExerciseLogsTableTable> {
+  $$ExerciseLogsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMinutes => $composableBuilder(
+    column: $table.durationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get intensity => $composableBuilder(
+    column: $table.intensity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PersonsTableTableFilterComposer get personID {
+    final $$PersonsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseLogsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExerciseLogsTableTable> {
+  $$ExerciseLogsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get logID => $composableBuilder(
+    column: $table.logID,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMinutes => $composableBuilder(
+    column: $table.durationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get intensity => $composableBuilder(
+    column: $table.intensity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PersonsTableTableOrderingComposer get personID {
+    final $$PersonsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseLogsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExerciseLogsTableTable> {
+  $$ExerciseLogsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get logID =>
+      $composableBuilder(column: $table.logID, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMinutes => $composableBuilder(
+    column: $table.durationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get intensity =>
+      $composableBuilder(column: $table.intensity, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  $$PersonsTableTableAnnotationComposer get personID {
+    final $$PersonsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personID,
+      referencedTable: $db.personsTable,
+      getReferencedColumn: (t) => t.personID,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PersonsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.personsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ExerciseLogsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExerciseLogsTableTable,
+          ExerciseLogData,
+          $$ExerciseLogsTableTableFilterComposer,
+          $$ExerciseLogsTableTableOrderingComposer,
+          $$ExerciseLogsTableTableAnnotationComposer,
+          $$ExerciseLogsTableTableCreateCompanionBuilder,
+          $$ExerciseLogsTableTableUpdateCompanionBuilder,
+          (ExerciseLogData, $$ExerciseLogsTableTableReferences),
+          ExerciseLogData,
+          PrefetchHooks Function({bool personID})
+        > {
+  $$ExerciseLogsTableTableTableManager(
+    _$AppDatabase db,
+    $ExerciseLogsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExerciseLogsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExerciseLogsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExerciseLogsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                Value<int> personID = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<int> durationMinutes = const Value.absent(),
+                Value<String> intensity = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+              }) => ExerciseLogsTableCompanion(
+                logID: logID,
+                personID: personID,
+                type: type,
+                durationMinutes: durationMinutes,
+                intensity: intensity,
+                timestamp: timestamp,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> logID = const Value.absent(),
+                required int personID,
+                required String type,
+                required int durationMinutes,
+                Value<String> intensity = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+              }) => ExerciseLogsTableCompanion.insert(
+                logID: logID,
+                personID: personID,
+                type: type,
+                durationMinutes: durationMinutes,
+                intensity: intensity,
+                timestamp: timestamp,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ExerciseLogsTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({personID = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (personID) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.personID,
+                                referencedTable:
+                                    $$ExerciseLogsTableTableReferences
+                                        ._personIDTable(db),
+                                referencedColumn:
+                                    $$ExerciseLogsTableTableReferences
+                                        ._personIDTable(db)
+                                        .personID,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ExerciseLogsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExerciseLogsTableTable,
+      ExerciseLogData,
+      $$ExerciseLogsTableTableFilterComposer,
+      $$ExerciseLogsTableTableOrderingComposer,
+      $$ExerciseLogsTableTableAnnotationComposer,
+      $$ExerciseLogsTableTableCreateCompanionBuilder,
+      $$ExerciseLogsTableTableUpdateCompanionBuilder,
+      (ExerciseLogData, $$ExerciseLogsTableTableReferences),
+      ExerciseLogData,
+      PrefetchHooks Function({bool personID})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -28901,4 +31277,10 @@ class $AppDatabaseManager {
       );
   $$QuotesTableTableTableManager get quotesTable =>
       $$QuotesTableTableTableManager(_db, _db.quotesTable);
+  $$WaterLogsTableTableTableManager get waterLogsTable =>
+      $$WaterLogsTableTableTableManager(_db, _db.waterLogsTable);
+  $$SleepLogsTableTableTableManager get sleepLogsTable =>
+      $$SleepLogsTableTableTableManager(_db, _db.sleepLogsTable);
+  $$ExerciseLogsTableTableTableManager get exerciseLogsTable =>
+      $$ExerciseLogsTableTableTableManager(_db, _db.exerciseLogsTable);
 }

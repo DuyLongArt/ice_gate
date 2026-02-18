@@ -184,8 +184,10 @@ class PersonBlock {
 
   /// Fetch user profile and details together
   Future<void> fetchFromDatabase(String token) async {
-    if (token.isEmpty) return;
-    // print("🔄 Syncing Person Information...");
+    if (token == "mock_guest_jwt_token") {
+      _applyGuestFallback();
+      return;
+    }
 
     try {
       // 1. Fetch Person Information
@@ -208,23 +210,27 @@ class PersonBlock {
       print("❌ Failed to fetch user profile: $e");
       // Fallback: Use some default data if currently in 'Initial' state to avoid blank screens
       if (information.value.profiles.firstName == 'Initial') {
-        print("🔄 Applying default fallback data...");
-        information.value = UserInformation(
-          profiles: const UserProfile(
-            firstName: 'DuyLong',
-            lastName: 'Art',
-            alias: 'Guest-Shield',
-            profileImageUrl:
-                'https://backend.duylong.art/object/publish/default_avatar.png',
-          ),
-          details: const UserDetails(
-            bio: 'Securing the digital frontier.',
-            occupation: 'Core Security Agent',
-            location: 'Unknown Sector',
-          ),
-        );
+        _applyGuestFallback();
       }
     }
+  }
+
+  void _applyGuestFallback() {
+    print("👤 Guest Mode: Applying default fallback data...");
+    information.value = UserInformation(
+      profiles: const UserProfile(
+        firstName: 'DuyLong',
+        lastName: 'Art',
+        alias: 'Guest-Shield',
+        profileImageUrl:
+            'https://backend.duylong.art/object/publish/default_avatar.png',
+      ),
+      details: const UserDetails(
+        bio: 'Securing the digital frontier.',
+        occupation: 'Core Security Agent',
+        location: 'Unknown Sector',
+      ),
+    );
   }
 
   // Update local profile image URL
@@ -290,6 +296,11 @@ class PersonBlock {
 
   // Fetch User Role
   Future<void> getUserRole(String token) async {
+    if (token == "mock_guest_jwt_token") {
+      account.value = const UserAccount(role: 'GUEST');
+      return;
+    }
+
     try {
       // Reusing fetchCurrentUser to get role, assuming it's in the response
       // Or if there is a specific /account/information endpoint that returns role:
@@ -301,11 +312,21 @@ class PersonBlock {
       print("✅ User Role Fetched: $role");
     } catch (e) {
       print("❌ Failed to get user role: $e");
+      // Fallback: Default to USER if currently empty to avoid breakage
+      if (account.value.role == 'USER') {
+        print("🔄 Applying default fallback role (USER)...");
+        account.value = const UserAccount(role: 'USER');
+      }
     }
   }
 
   // Fetch Skills
   Future<void> getUserSkill(String token) async {
+    if (token == "mock_guest_jwt_token") {
+      skills.value = [];
+      return;
+    }
+
     try {
       final skillsData = await _authService.fetchUserSkills(token);
       final skillList = skillsData.map((s) => SkillType.fromJson(s)).toList();
@@ -314,6 +335,11 @@ class PersonBlock {
       // print("✅ Database Skill Successful: ${skillList.length} skills found.");
     } catch (e) {
       print("❌ Failed to get user skills: $e");
+      // Fallback: Provide a default empty list if it fails, ensuring UI doesn't crash
+      if (skills.value.isEmpty) {
+        print("🔄 Applying empty skill list fallback...");
+        skills.value = [];
+      }
     }
   }
 
@@ -323,6 +349,19 @@ class PersonBlock {
       print("⚠️ No token provided for initial data fetch");
       return;
     }
+
+    if (token == "mock_guest_jwt_token") {
+      print(
+        "👤 Guest Mode: Skipping network data fetch and using local/fallback data.",
+      );
+      await Future.wait([
+        fetchFromDatabase(token),
+        getUserRole(token),
+        getUserSkill(token),
+      ]);
+      return;
+    }
+
     print("🚀 Starting Initial Data Fetch...");
     try {
       await Future.wait([

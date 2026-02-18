@@ -355,9 +355,10 @@ class _HomePageState extends State<HomePage> {
                             'Health',
                             Icons.favorite_rounded,
                             Colors.green,
-                            '$steps steps•$kcal kcal',
-                            '/health',
-                            scoreBlock.score.healthGlobalScore,
+                            subtitle1: '$steps steps',
+                            subtitle2: '$kcal kcal',
+                            route: '/health',
+                            scoreData: scoreBlock.score.healthGlobalScore,
                           );
                         }),
                         Watch((context) {
@@ -368,9 +369,10 @@ class _HomePageState extends State<HomePage> {
                             'Finance',
                             Icons.account_balance_wallet_rounded,
                             Colors.blue,
-                            'Total \$${balance.toStringAsFixed(0)} • Out:\$${spending.toStringAsFixed(0)}',
-                            '/finance',
-                            scoreBlock.score.financialGlobalScore,
+                            subtitle1: 'Total \$${balance.toStringAsFixed(0)}',
+                            subtitle2: 'Spent \$${spending.toStringAsFixed(0)}',
+                            route: '/finance',
+                            scoreData: scoreBlock.score.financialGlobalScore,
                           );
                         }),
                         StreamBuilder<List<PersonData>>(
@@ -382,9 +384,10 @@ class _HomePageState extends State<HomePage> {
                               'Social',
                               Icons.people_alt_rounded,
                               Colors.purple,
-                              '$count relationships',
-                              '/social',
-                              scoreBlock.score.socialGlobalScore,
+                              subtitle1: '$count relationships',
+                              subtitle2: 'Expanding network',
+                              route: '/social',
+                              scoreData: scoreBlock.score.socialGlobalScore,
                             );
                           },
                         ),
@@ -404,9 +407,10 @@ class _HomePageState extends State<HomePage> {
                             'Projects',
                             Icons.rocket_launch_rounded,
                             Colors.orange,
-                            '$activeCount active • $doneCount done',
-                            '/projects',
-                            scoreBlock.score.careerGlobalScore,
+                            subtitle1: '$activeCount active goals',
+                            subtitle2: '$doneCount completed',
+                            route: '/projects',
+                            scoreData: scoreBlock.score.careerGlobalScore,
                           );
                         }),
                       ],
@@ -662,7 +666,7 @@ class _HomePageState extends State<HomePage> {
         TextButton.icon(
           onPressed: () => context.go(route),
           icon: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-          label: const Text('View All'),
+          label: const Text('Analysis'),
           style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
       ],
@@ -673,11 +677,12 @@ class _HomePageState extends State<HomePage> {
     BuildContext context,
     String title,
     IconData icon,
-    Color color,
-    String subtitle,
-    String route,
-    double scoreData,
-  ) {
+    Color color, {
+    required String subtitle1,
+    required String subtitle2,
+    required String route,
+    required double scoreData,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final safeScore = scoreData.isFinite ? scoreData.toInt() : 0;
     final level = GamificationService.getLevel(safeScore);
@@ -737,32 +742,41 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 1.0, end: 1.0),
-                          duration: const Duration(milliseconds: 1000),
-                          builder: (context, scale, child) {
-                            return Transform.scale(
-                              scale: scale,
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: color.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: color.withOpacity(0.2),
-                                      blurRadius: 8,
-                                      spreadRadius: -2,
+                          tween: Tween<double>(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 1200),
+                          curve: Curves.easeOutQuart,
+                          builder: (context, value, child) {
+                            return Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 60,
+                                  height: 60,
+                                  child: CircularProgressIndicator(
+                                    value: value.clamp(0.0, 1.0),
+                                    strokeWidth: 4,
+                                    backgroundColor: color.withOpacity(0.1),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      color,
                                     ),
-                                  ],
+                                    strokeCap: StrokeCap.round,
+                                  ),
                                 ),
-                                child: Icon(icon, color: color, size: 28),
-                              ),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: color.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(icon, color: color, size: 24),
+                                ),
+                              ],
                             );
                           },
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
+                            horizontal: 5,
                             vertical: 4,
                           ),
                           child: ScorePulseWrapper(
@@ -770,6 +784,17 @@ class _HomePageState extends State<HomePage> {
                             child: Column(
                               key: ValueKey(title),
                               children: [
+                                AutoSizeText(
+                                  title,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18, // User manual adjustment
+                                    color: colorScheme.onSurface,
+                                    letterSpacing: -0.5,
+                                  ),
+                                  maxLines: 1,
+                                ),
+                                const SizedBox(height: 6),
                                 RollingScoreText(
                                   value: level,
                                   prefix: "LV ",
@@ -780,7 +805,7 @@ class _HomePageState extends State<HomePage> {
                                     letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 6),
                                 RollingScoreText(
                                   value: scoreData,
                                   prefix: "P: ",
@@ -798,43 +823,28 @@ class _HomePageState extends State<HomePage> {
                       ],
                     ),
                     const Spacer(),
+
+                    // const SizedBox(height: ),1
                     AutoSizeText(
-                      title,
+                      subtitle1,
                       style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                        color: colorScheme.onSurface,
-                        letterSpacing: -0.5,
+                        color: colorScheme.onSurface.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
                       ),
                       maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: progress),
-                        duration: const Duration(milliseconds: 1200),
-                        curve: Curves.easeOutQuart,
-                        builder: (context, value, child) {
-                          return LinearProgressIndicator(
-                            value: value.clamp(0.0, 1.0),
-                            backgroundColor: color.withOpacity(0.1),
-                            valueColor: AlwaysStoppedAnimation<Color>(color),
-                            minHeight: 6,
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 4),
                     AutoSizeText(
-                      subtitle,
+                      subtitle2,
                       style: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.2,
+                        color: colorScheme.onSurface.withOpacity(0.55),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

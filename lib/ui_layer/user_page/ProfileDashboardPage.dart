@@ -129,23 +129,7 @@ class ProfileDashboardPage extends StatelessWidget {
 
       return Scaffold(
         backgroundColor: colorScheme.surface,
-        appBar: AppBar(
-          title: // Wrap your Text in AutoSizeText
-          AutoSizeText(
-            '4 life elements',
-            style: textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-            minFontSize: 12, // Prevents it from becoming unreadable
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          centerTitle: true,
-          backgroundColor: colorScheme.primary,
-          foregroundColor: colorScheme.onPrimary,
-          elevation: 0,
-        ),
+       
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -165,51 +149,7 @@ class ProfileDashboardPage extends StatelessWidget {
 
               const SizedBox(height: 16),
 
-              // 2x2 Grid of Section Cards
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.85,
-                children: [
-                  HealthSectionCard(
-                    metrics: profile.health,
-                    onTap: () => context.go('/health'),
-                  ),
-                  StreamBuilder<FinanceMetrics>(
-                    stream: _getFinanceStream(
-                      context,
-                      int.tryParse(info.profiles.id?.toString() ?? '1') ?? 1,
-                    ),
-                    builder: (context, snapshot) {
-                      final metrics =
-                          snapshot.data ??
-                          const FinanceMetrics(
-                            balance: 0,
-                            monthlyIncome: 0,
-                            monthlyExpenses: 0,
-                            savingsRate: 0,
-                          );
-                      return FinanceSectionCard(
-                        metrics: metrics,
-                        onTap: () => context.go('/finance'),
-                      );
-                    },
-                  ),
-                  SocialSectionCard(
-                    metrics: profile.social,
-                    onTap: () => context.go('/social'),
-                  ),
-                  ProjectSectionCard(
-                    metrics: profile.projects,
-                    onTap: () => context.go('/projects'),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
+           
 
               const SizedBox(height: 32),
 

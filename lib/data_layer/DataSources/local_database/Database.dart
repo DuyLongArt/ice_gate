@@ -553,6 +553,48 @@ class SessionTable extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+@DataClassName('WaterLogData')
+class WaterLogsTable extends Table {
+  IntColumn get logID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get amount =>
+      integer().withDefault(const Constant(0))(); // ml or glasses
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('SleepLogData')
+class SleepLogsTable extends Table {
+  IntColumn get logID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  DateTimeColumn get startTime => dateTime()();
+  DateTimeColumn get endTime => dateTime().nullable()();
+  IntColumn get quality =>
+      integer().withDefault(const Constant(3))(); // 1-5 rating
+}
+
+@DataClassName('ExerciseLogData')
+class ExerciseLogsTable extends Table {
+  IntColumn get logID => integer().autoIncrement()();
+  IntColumn get personID => integer().references(
+    PersonsTable,
+    #personID,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get type => text()(); // e.g., 'Gym', 'Running'
+  IntColumn get durationMinutes => integer()();
+  TextColumn get intensity =>
+      text().withDefault(const Constant('medium'))(); // low, medium, high
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+}
+
 @DataClassName('ThemeData')
 class ThemeTable extends Table {
   IntColumn get themeID => integer().autoIncrement()();
@@ -1724,6 +1766,52 @@ class CustomNotificationDAO extends DatabaseAccessor<AppDatabase>
   }
 }
 
+@DriftAccessor(tables: [WaterLogsTable, SleepLogsTable, ExerciseLogsTable])
+class HealthLogsDAO extends DatabaseAccessor<AppDatabase>
+    with _$HealthLogsDAOMixin {
+  HealthLogsDAO(super.db);
+
+  // Water Logs
+  Future<int> insertWaterLog(WaterLogsTableCompanion entry) =>
+      into(waterLogsTable).insert(entry);
+  Stream<List<WaterLogData>> watchDailyWaterLogs(int personId, DateTime date) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(waterLogsTable)..where(
+          (t) =>
+              t.personID.equals(personId) &
+              t.timestamp.isBetweenValues(start, end),
+        ))
+        .watch();
+  }
+
+  // Sleep Logs
+  Future<int> insertSleepLog(SleepLogsTableCompanion entry) =>
+      into(sleepLogsTable).insert(entry);
+  Stream<List<SleepLogData>> watchSleepLogs(int personId) {
+    return (select(
+      sleepLogsTable,
+    )..where((t) => t.personID.equals(personId))).watch();
+  }
+
+  // Exercise Logs
+  Future<int> insertExerciseLog(ExerciseLogsTableCompanion entry) =>
+      into(exerciseLogsTable).insert(entry);
+  Stream<List<ExerciseLogData>> watchDailyExerciseLogs(
+    int personId,
+    DateTime date,
+  ) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(exerciseLogsTable)..where(
+          (t) =>
+              t.personID.equals(personId) &
+              t.timestamp.isBetweenValues(start, end),
+        ))
+        .watch();
+  }
+}
+
 // --- 6. Main Database Class ---
 
 @DriftDatabase(
@@ -1755,6 +1843,9 @@ class CustomNotificationDAO extends DatabaseAccessor<AppDatabase>
     FocusSessionsTable,
     CustomNotificationsTable,
     QuotesTable,
+    WaterLogsTable,
+    SleepLogsTable,
+    ExerciseLogsTable,
   ],
   daos: [
     ThemesTableDAO,
@@ -1777,13 +1868,14 @@ class CustomNotificationDAO extends DatabaseAccessor<AppDatabase>
     FocusSessionsDAO,
     CustomNotificationDAO,
     QuoteDAO,
+    HealthLogsDAO,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 18; // Increment schema version
+  int get schemaVersion => 19; // Increment schema version
 
   Future<void> clearAllData() async {
     await transaction(() async {
@@ -1936,6 +2028,11 @@ class AppDatabase extends _$AppDatabase {
               "ALTER TABLE custom_notifications_table ADD COLUMN repeat_days TEXT;",
             );
           } catch (_) {}
+        }
+        if (from < 19) {
+          await m.createTable(waterLogsTable);
+          await m.createTable(sleepLogsTable);
+          await m.createTable(exerciseLogsTable);
         }
       },
       beforeOpen: (details) async {

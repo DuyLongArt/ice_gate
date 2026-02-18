@@ -17,15 +17,9 @@ class PersonalInformationPage extends StatefulWidget {
       type: "profile",
       destination: "/profile",
       size: size,
-      icon: Icons.person,
+      icon: Icons.home,
       mainFunction: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Edit Profile feature coming soon!'),
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        context.go("/");
       },
     );
   }

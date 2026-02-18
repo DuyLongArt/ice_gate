@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'
-    show HealthMetricsDAO, HealthMetricsTableCompanion;
+    show HealthMetricsDAO, HealthMetricsTableCompanion, HealthLogsDAO;
 import 'package:signals/signals.dart';
 
 class HealthBlock {
@@ -12,6 +12,7 @@ class HealthBlock {
   final historicalSteps = signal<int>(0);
   final dailyStepGoal = signal<int>(10000);
   final dailyKcalGoal = signal<int>(2500);
+  final todayWater = signal<int>(0);
 
   late final totalSteps = computed(
     () => todaySteps.value + historicalSteps.value,
@@ -19,8 +20,15 @@ class HealthBlock {
 
   StreamSubscription? _metricsSubscription;
 
-  HealthBlock({required this.personId, required HealthMetricsDAO healthDao})
-    : _healthDao = healthDao;
+  HealthBlock({
+    required this.personId,
+    required HealthMetricsDAO healthDao,
+    required HealthLogsDAO healthLogsDao,
+  }) : _healthDao = healthDao,
+       _healthLogsDao = healthLogsDao;
+
+  final HealthLogsDAO _healthLogsDao;
+  StreamSubscription? _waterSubscription;
 
   void init() {
     // Watch all metrics to calculate historical steps (excluding today)
@@ -48,6 +56,12 @@ class HealthBlock {
         todaySteps.value = foundTodaySteps;
       }
     });
+
+    _waterSubscription = _healthLogsDao
+        .watchDailyWaterLogs(personId, DateTime.now())
+        .listen((logs) {
+          todayWater.value = logs.fold<int>(0, (sum, log) => sum + log.amount);
+        });
   }
 
   void updateSteps(int steps) {
@@ -73,8 +87,10 @@ class HealthBlock {
 
   void dispose() {
     _metricsSubscription?.cancel();
+    _waterSubscription?.cancel();
     todaySteps.dispose();
     historicalSteps.dispose();
-    totalSteps.dispose();
+    // totalSteps is a computed signal, it is handled automatically
+    todayWater.dispose();
   }
 }

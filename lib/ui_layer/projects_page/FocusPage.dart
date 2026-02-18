@@ -1159,6 +1159,24 @@ class _GloriousTimerPainter extends CustomPainter {
     // Draw the main arc
     canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
 
+    // --- Premium Iridescent Layer ---
+    if (progress > 0 && !isTrack) {
+      final iridescentPaint = Paint()
+        ..shader = SweepGradient(
+          colors: [
+            color.withOpacity(0.1),
+            Colors.white.withOpacity(0.4),
+            color.withOpacity(0.1),
+          ],
+          stops: const [0.0, 0.5, 1.0],
+          transform: GradientRotation(startAngle + sweepAngle - 0.2),
+        ).createShader(rect)
+        ..strokeWidth = strokeWidth * 0.4
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+      canvas.drawArc(rect, startAngle, sweepAngle, false, iridescentPaint);
+    }
+
     // --- Theme Specific Details ---
     if (progress > 0) {
       if (themeName == 'Sakura Zen') {
@@ -1199,6 +1217,9 @@ class _GloriousTimerPainter extends CustomPainter {
         ..style = PaintingStyle.fill
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
       canvas.drawCircle(headPos, strokeWidth * 2, outerHeadPaint);
+
+      // Particle Trail
+      _paintParticles(canvas, center, radius, headAngle, color);
     }
   }
 
@@ -1410,6 +1431,35 @@ class _GloriousTimerPainter extends CustomPainter {
         5,
         pulsePaint..color = pulsePaint.color.withOpacity(0.2),
       );
+    }
+  }
+
+  void _paintParticles(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double headAngle,
+    Color color,
+  ) {
+    final random = math.Random(42); // Deterministic "random"
+    for (int i = 0; i < 8; i++) {
+      final angleOffset = -(random.nextDouble() * 0.2);
+      final distOffset = (random.nextDouble() - 0.5) * 10;
+      final partAngle = headAngle + angleOffset;
+      final partPos = Offset(
+        center.dx + (radius + distOffset) * math.cos(partAngle),
+        center.dy + (radius + distOffset) * math.sin(partAngle),
+      );
+
+      final partPaint = Paint()
+        ..color = color.withOpacity(1.0 - (i / 8))
+        ..style = PaintingStyle.fill
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          random.nextDouble() * 3,
+        );
+
+      canvas.drawCircle(partPos, 1.5 * (1.0 - (i / 8)), partPaint);
     }
   }
 
@@ -2230,6 +2280,7 @@ class _TimerSettingsSheet extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -2238,7 +2289,7 @@ class _TimerSettingsSheet extends StatelessWidget {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.only(top: 90, left: 20, right: 20),
       child: SafeArea(
         top: false,
         child: SingleChildScrollView(
@@ -2246,6 +2297,7 @@ class _TimerSettingsSheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // const SizedBox(width: 50,),
               Row(
                 children: [
                   const Icon(Icons.settings_suggest_rounded, size: 24),

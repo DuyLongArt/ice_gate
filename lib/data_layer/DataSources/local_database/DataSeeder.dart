@@ -7,8 +7,8 @@ import 'package:ice_shield/data_layer/Protocol/User/UserAccountProtocol.dart';
 
 class DataSeeder {
   static Future<void> seed(AppDatabase db) async {
-    // Check if any person exists (autoincrement usually starts at 1)
-    final person = await db.personManagementDAO.getPersonById(1);
+    // Check if any person exists (autoincrement usually starts at 1, but we use 0 in seeder)
+    final person = await db.personManagementDAO.getPersonById(0);
     if (person != null) return; // Already seeded
 
     print("Seeding database...");

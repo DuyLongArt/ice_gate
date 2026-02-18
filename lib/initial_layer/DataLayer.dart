@@ -149,6 +149,7 @@ class _DataLayerState extends State<DataLayer> {
       healthBlock = HealthBlock(
         personId: 1,
         healthDao: widget.database.healthMetricsDAO,
+        healthLogsDao: widget.database.healthLogsDAO,
       );
       growthBlock = GrowthBlock();
       scoreBlock = ScoreBlock();
@@ -251,11 +252,16 @@ class _DataLayerState extends State<DataLayer> {
       print("DataLayer: Seeding data");
       await DataSeeder.seed(widget.database);
       print("DataLayer: Initialization success");
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     } catch (e, stack) {
       print("DataLayer: Initialization CRITICAL error: $e");
       print(stack);
-    } finally {
-      print("DataLayer: Finalizing initialization (isInitialized = true)");
+      // We set _isInitialized = true even on error to "fail forward"
+      // and let the app handle missing data gracefully rather than hanging forever.
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -366,6 +372,7 @@ class _DataLayerState extends State<DataLayer> {
           create: (_) => widget.database.customNotificationDAO,
         ),
         Provider<QuoteDAO>(create: (_) => widget.database.quoteDAO),
+        Provider<HealthLogsDAO>(create: (_) => widget.database.healthLogsDAO),
 
         // --- NEW: Reactive Blocks ---
         // PersonBlock (Load user ID 1 by default)

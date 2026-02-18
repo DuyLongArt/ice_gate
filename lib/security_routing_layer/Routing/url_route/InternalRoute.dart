@@ -4,6 +4,7 @@ import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
 import 'package:ice_shield/ui_layer/health_page/CaloriesPage.dart';
 import 'package:ice_shield/ui_layer/health_page/ExercisePage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
+import 'package:ice_shield/ui_layer/health_page/HabitDashboardPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/StepsPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectNotesPage.dart';
 import 'package:ice_shield/ui_layer/widget_page/WidgetPage.dart';
@@ -165,6 +166,11 @@ final GoRouter router = GoRouter(
               path: 'focus',
               parentNavigatorKey: _shellNavigatorKey,
               builder: (context, state) => const FocusPage(),
+            ),
+            GoRoute(
+              path: 'habits',
+              parentNavigatorKey: _shellNavigatorKey,
+              builder: (context, state) => const HabitDashboardPage(),
             ),
           ],
         ),

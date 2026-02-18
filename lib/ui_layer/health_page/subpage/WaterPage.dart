@@ -1,7 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:intl/intl.dart';
 
 class WaterPage extends StatefulWidget {
   const WaterPage({super.key});
@@ -10,219 +12,359 @@ class WaterPage extends StatefulWidget {
   State<WaterPage> createState() => _WaterPageState();
 }
 
-class _WaterPageState extends State<WaterPage> {
-  int _currentWater = 0; // in ml
-  final int _goalWater = 2000; // in ml
-  bool _isLoading = true;
+class _WaterPageState extends State<WaterPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _waveController;
+  final int _goalWater = 2000;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
   }
 
-  Future<void> _loadData() async {
-    final dao = context.read<HealthMetricsDAO>();
-    final today = DateTime.now();
-    // Assuming personID 1 for now
-    final data = await dao.getMetricsForDate(1, today);
-    if (mounted) {
-      setState(() {
-        _currentWater =
-            data?.waterGlasses ?? 0; // Storing ml in waterGlasses column
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _addWater(int amount) async {
-    final dao = context.read<HealthMetricsDAO>();
-    final today = DateTime.now();
-
-    // Optimistic update
-    setState(() {
-      _currentWater += amount;
-    });
-
-    try {
-      final currentMetrics = await dao.getMetricsForDate(1, today);
-
-      if (currentMetrics != null) {
-        // Update existing
-        await dao.insertOrUpdateMetrics(
-          currentMetrics
-              .toCompanion(true)
-              .copyWith(
-                waterGlasses: drift.Value(_currentWater),
-                updatedAt: drift.Value(DateTime.now()),
-              ),
-        );
-      } else {
-        // Insert new
-        await dao.insertOrUpdateMetrics(
-          HealthMetricsTableCompanion.insert(
-            personID: 1,
-            date: today,
-            waterGlasses: drift.Value(_currentWater),
-            updatedAt: drift.Value(DateTime.now()),
-          ),
-        );
-      }
-    } catch (e) {
-      // Revert on error
-      if (mounted) {
-        setState(() {
-          _currentWater -= amount;
-        });
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving water: $e')));
-      }
-    }
-  }
-
-  Future<void> _resetWater() async {
-    final dao = context.read<HealthMetricsDAO>();
-    final today = DateTime.now();
-
-    setState(() {
-      _currentWater = 0;
-    });
-
-    try {
-      final currentMetrics = await dao.getMetricsForDate(1, today);
-      if (currentMetrics != null) {
-        await dao.insertOrUpdateMetrics(
-          currentMetrics
-              .toCompanion(true)
-              .copyWith(
-                waterGlasses: const drift.Value(0),
-                updatedAt: drift.Value(DateTime.now()),
-              ),
-        );
-      }
-    } catch (e) {
-      // Handle error
-    }
+  @override
+  void dispose() {
+    _waveController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final dao = context.watch<HealthLogsDAO>();
     final textTheme = Theme.of(context).textTheme;
-    double progress = (_currentWater / _goalWater).clamp(0.0, 1.0);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Water Tracker'),
-        centerTitle: true,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        elevation: 0,
-      ),
-      backgroundColor: colorScheme.surface,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+    return StreamBuilder<List<WaterLogData>>(
+      stream: dao.watchDailyWaterLogs(1, DateTime.now()),
+      builder: (context, snapshot) {
+        final logs = snapshot.data ?? [];
+        final totalWater = logs.fold<int>(0, (sum, log) => sum + log.amount);
+        double progress = (totalWater / _goalWater).clamp(0.0, 1.0);
+
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: const Text(
+              'Water Intensity',
+              style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -1),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: Stack(
+            children: [
+              // Aquatic Gradient Background
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF0D47A1),
+                      Color(0xFF1976D2),
+                      Color(0xFF42A5F5),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Animated Wave Liquid Effect
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _waveController,
+                  builder: (context, child) {
+                    return CustomPaint(
+                      painter: LiquidPainter(
+                        progress: progress,
+                        waveValue: _waveController.value,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Content Overlay
+              SafeArea(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Stack(
-                      alignment: Alignment.center,
+                    const SizedBox(height: 40),
+                    // Centered Counter
+                    Column(
                       children: [
-                        SizedBox(
-                          width: 200,
-                          height: 200,
-                          child: CircularProgressIndicator(
-                            value: progress,
-                            strokeWidth: 16,
-                            backgroundColor: colorScheme.primary.withOpacity(
-                              0.1,
-                            ),
-                            color: Colors.blue,
-                            strokeCap: StrokeCap.round,
+                        Text(
+                          '$totalWater',
+                          style: textTheme.displayLarge?.copyWith(
+                            fontSize: 80,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            height: 1,
                           ),
                         ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.water_drop,
-                              size: 48,
-                              color: Colors.blue,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '$_currentWater',
-                              style: textTheme.displayMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            Text(
-                              'ml / $_goalWater ml',
-                              style: textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'OF $_goalWater ML',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            letterSpacing: 4,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 48),
 
-                    Text("Quick Add", style: textTheme.titleMedium),
-                    const SizedBox(height: 16),
+                    const Spacer(),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildWaterAddButton(100, '100ml', colorScheme),
-                        _buildWaterAddButton(250, '250ml', colorScheme),
-                        _buildWaterAddButton(500, '500ml', colorScheme),
-                      ],
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    OutlinedButton.icon(
-                      onPressed: _resetWater,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Reset Today'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colorScheme.error,
-                        side: BorderSide(color: colorScheme.error),
+                    // Quick Add Tactile Buttons
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(20),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(color: Colors.white.withAlpha(50)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _tactileButton(context, dao, 100, "100"),
+                            _tactileButton(context, dao, 250, "250"),
+                            _tactileButton(context, dao, 500, "500"),
+                            _customButton(context, dao),
+                          ],
+                        ),
                       ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    // Glassmorphic History List
+                    Container(
+                      height: 250,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(15),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(40),
+                        ),
+                        border: Border.all(color: Colors.white.withAlpha(30)),
+                      ),
+                      child: logs.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "STAY HYDRATED",
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(24),
+                              itemCount: logs.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final log = logs[logs.length - 1 - index];
+                                return _historyItem(log, context);
+                              },
+                            ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildWaterAddButton(
+  Widget _tactileButton(
+    BuildContext context,
+    HealthLogsDAO dao,
     int amount,
     String label,
-    ColorScheme colorScheme,
   ) {
-    return Column(
-      children: [
-        IconButton.filled(
-          onPressed: () => _addWater(amount),
-          icon: const Icon(Icons.add),
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.blue.withOpacity(0.1),
-            foregroundColor: Colors.blue,
-            padding: const EdgeInsets.all(20),
-            iconSize: 28,
+    return GestureDetector(
+      onTap: () async {
+        Feedback.forTap(context);
+        await dao.insertWaterLog(
+          WaterLogsTableCompanion.insert(
+            personID: 1,
+            amount: drift.Value(amount),
+            timestamp: drift.Value(DateTime.now()),
+          ),
+        );
+      },
+      child: Container(
+        height: 60,
+        width: 60,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF1976D2),
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-      ],
+      ),
     );
   }
+
+  Widget _customButton(BuildContext context, HealthLogsDAO dao) {
+    return GestureDetector(
+      onTap: () => _showCustomInputDialog(context, dao),
+      child: Container(
+        height: 60,
+        width: 60,
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(40),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 2),
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 30),
+      ),
+    );
+  }
+
+  void _showCustomInputDialog(BuildContext context, HealthLogsDAO dao) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("CUSTOM INTAKE"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(suffixText: "ML"),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("CANCEL"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = int.tryParse(controller.text) ?? 0;
+              if (amount > 0) {
+                await dao.insertWaterLog(
+                  WaterLogsTableCompanion.insert(
+                    personID: 1,
+                    amount: drift.Value(amount),
+                    timestamp: drift.Value(DateTime.now()),
+                  ),
+                );
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text("ADD"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _historyItem(WaterLogData log, BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(10),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.water_drop, color: Colors.white70, size: 18),
+          const SizedBox(width: 15),
+          Text(
+            "${log.amount} ML",
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            DateFormat('HH:mm').format(log.timestamp),
+            style: const TextStyle(color: Colors.white38, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LiquidPainter extends CustomPainter {
+  final double progress;
+  final double waveValue;
+
+  LiquidPainter({required this.progress, required this.waveValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width == 0 || size.height == 0) return;
+
+    final paint = Paint()
+      ..color = Colors.white.withAlpha(40)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    double yOffset = size.height * (1 - progress);
+
+    path.moveTo(0, yOffset);
+
+    // Wave Animation
+    for (double i = 0; i <= size.width; i++) {
+      path.lineTo(
+        i,
+        yOffset +
+            math.sin(
+                  (i / size.width * 2 * math.pi) + (waveValue * 2 * math.pi),
+                ) *
+                10,
+      );
+    }
+
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Forefront wave (slightly different phase/color)
+    final paint2 = Paint()
+      ..color = Colors.white.withAlpha(30)
+      ..style = PaintingStyle.fill;
+
+    final path2 = Path();
+    path2.moveTo(0, yOffset);
+    for (double i = 0; i <= size.width; i++) {
+      path2.lineTo(
+        i,
+        yOffset +
+            math.cos(
+                  (i / size.width * 2 * math.pi) + (waveValue * 2 * math.pi),
+                ) *
+                15,
+      );
+    }
+    path2.lineTo(size.width, size.height);
+    path2.lineTo(0, size.height);
+    path2.close();
+
+    canvas.drawPath(path2, paint2);
+  }
+
+  @override
+  bool shouldRepaint(LiquidPainter oldDelegate) => true;
 }
