@@ -566,7 +566,7 @@ class CustomNotificationsTable extends Table {
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get content => text()();
   DateTimeColumn get scheduledTime => dateTime()();
-  TextColumn get repeatFrequency => text().withDefault(
+  TextColumn get repeatFrequency => text().nullable().withDefault(
     const Constant('none'),
   )(); // none, hourly, daily, weekly
   TextColumn get repeatDays =>
@@ -1485,7 +1485,13 @@ class HealthMetricsDAO extends DatabaseAccessor<AppDatabase>
       final normalized = DateTime(d.year, d.month, d.day);
       finalEntry = entry.copyWith(date: Value(normalized));
     }
-    return into(healthMetricsTable).insertOnConflictUpdate(finalEntry);
+    return into(healthMetricsTable).insert(
+      finalEntry,
+      onConflict: DoUpdate(
+        (old) => finalEntry,
+        target: [healthMetricsTable.personID, healthMetricsTable.date],
+      ),
+    );
   }
 
   Future<int> deleteMetricsForPerson(int personID) {
@@ -1933,13 +1939,44 @@ class AppDatabase extends _$AppDatabase {
         }
       },
       beforeOpen: (details) async {
-        // Ensure affection column exists (handles case where migration was skipped)
+        print(
+          "Drift: beforeOpen triggered. Version: ${details.versionBefore} -> ${details.versionNow}",
+        );
+
+        // 1. persons_table cleanup
         try {
           await customStatement(
             "ALTER TABLE persons_table ADD COLUMN affection INTEGER DEFAULT 0;",
           );
-        } catch (_) {
-          // Column already exists, ignore
+          print("Drift: Added affection column to persons_table");
+        } catch (_) {}
+        try {
+          await customStatement(
+            "UPDATE persons_table SET affection = 0 WHERE affection IS NULL;",
+          );
+        } catch (_) {}
+
+        // 2. custom_notifications_table cleanup (Fixes NULL check operator error)
+        try {
+          print("Drift: Cleaning up custom_notifications_table NULLs...");
+          // Ensure all non-nullable columns have defaults if they somehow got NULLs
+          await customStatement(
+            "UPDATE custom_notifications_table SET repeat_frequency = 'none' WHERE repeat_frequency IS NULL;",
+          );
+          await customStatement(
+            "UPDATE custom_notifications_table SET is_enabled = 1 WHERE is_enabled IS NULL;",
+          );
+          await customStatement(
+            "UPDATE custom_notifications_table SET title = 'Reminder' WHERE title IS NULL;",
+          );
+          await customStatement(
+            "UPDATE custom_notifications_table SET content = '' WHERE content IS NULL;",
+          );
+
+          // Verify if the columns even exist if we still crash
+          print("Drift: custom_notifications_table cleanup completed.");
+        } catch (e) {
+          print("Drift: Error cleaning up custom_notifications_table: $e");
         }
       },
     );

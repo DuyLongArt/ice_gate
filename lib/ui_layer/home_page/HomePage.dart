@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../UIConstants.dart';
 import 'package:ice_shield/data_layer/Protocol/Health/HealthMetricsData.dart';
 import 'package:ice_shield/initial_layer/CoreLogics/GamificationService.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Home/InternalWidgetBlock.dart'
@@ -45,6 +46,7 @@ class HomePage extends StatefulWidget {
         print("double click");
         context.pop();
       },
+      onSwipeUp: () => context.go("/canvas"),
       subButtons: [
         SubButton(
           icon: Icons.create_new_folder_rounded,
@@ -81,6 +83,13 @@ class HomePage extends StatefulWidget {
               MaterialPageRoute(builder: (context) => const TextEditorPage()),
             );
           },
+        ),
+        SubButton(
+          icon: Icons.grid_view_rounded,
+          backgroundColor: Colors.cyan,
+          tooltip: "Canvas",
+          label: "Canvas",
+          onPressed: () => context.go("/canvas"),
         ),
       ],
     );
@@ -149,8 +158,6 @@ class _HomePageState extends State<HomePage> {
   late HealthBlock healthBlock;
   EffectCleanup? _levelEffect;
   final _levelUpToShow = signal<int?>(null);
-
-  late double sizeOfWidget;
 
   @override
   void initState() {
@@ -272,9 +279,8 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    const double sizeOfDeparment = 220;
-    sizeOfWidget = MediaQuery.of(context).size.width * 0.3;
-    sizeOfWidget = sizeOfWidget.clamp(100, 200);
+    final double sizeOfDepartment = UIConstants.getSizeOfDepartment(context);
+    final double sizeOfWidget = UIConstants.getSizeOfWidget(context);
     return SwipeablePage(
       onSwipe: () => Navigator.maybePop(context), // Use maybePop for safety
       direction: SwipeablePageDirection.leftToRight,
@@ -332,11 +338,11 @@ class _HomePageState extends State<HomePage> {
                   _buildGamifiedHeader(context),
                   const SizedBox(height: 24),
 
-                  // --- SECTION: Things in life ---
-                  _buildSectionHeader(context, 'Things in life', '/profile'),
+                  // --- SECTION: 4 life elements ---
+                  _buildSectionHeader(context, '4 life elements', '/profile'),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: sizeOfDeparment,
+                    height: sizeOfDepartment,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
@@ -362,7 +368,7 @@ class _HomePageState extends State<HomePage> {
                             'Finance',
                             Icons.account_balance_wallet_rounded,
                             Colors.blue,
-                            '\$${balance.toStringAsFixed(0)} •\$${spending.toStringAsFixed(0)} this mo',
+                            'Total \$${balance.toStringAsFixed(0)} • Out:\$${spending.toStringAsFixed(0)}',
                             '/finance',
                             scoreBlock.score.financialGlobalScore,
                           );
@@ -371,7 +377,6 @@ class _HomePageState extends State<HomePage> {
                           stream: database.personDAO.getAllPersons(),
                           builder: (context, snapshot) {
                             final count = snapshot.data?.length ?? 0;
-                            print('count: ${snapshot.data}');
                             return _buildQuickAccessCard(
                               context,
                               'Social',
@@ -848,6 +853,8 @@ class _HomePageState extends State<HomePage> {
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final sizeOfWidget = UIConstants.getSizeOfWidget(context);
+
     if (widgetData == null) {
       return InkWell(
         onTap: () => _showAddPluginDialog(context),
@@ -861,7 +868,7 @@ class _HomePageState extends State<HomePage> {
 
             border: Border.all(
               color: colorScheme.primary.withOpacity(0.2),
-              width: 5,
+              width: UIConstants.getBorderWidth(context, sizeOfWidget),
               style: BorderStyle
                   .none, // Can change to solid for dashed effect if custom painter
             ),
@@ -911,7 +918,7 @@ class _HomePageState extends State<HomePage> {
         ],
         border: Border.all(
           color: colorScheme.outlineVariant.withOpacity(0.4),
-          width: 5,
+          width: UIConstants.getBorderWidth(context, sizeOfWidget),
         ),
       ),
       child: Column(
@@ -996,6 +1003,7 @@ class _HomePageState extends State<HomePage> {
     final colorScheme = Theme.of(context).colorScheme;
     final String fullUrl = "${data.protocol}://${data.host}${data.url}";
 
+    final sizeOfWidget = UIConstants.getSizeOfWidget(context);
     final item = Container(
       width: sizeOfWidget,
       height: sizeOfWidget,
@@ -1012,7 +1020,7 @@ class _HomePageState extends State<HomePage> {
         ],
         border: Border.all(
           color: colorScheme.outlineVariant.withOpacity(0.4),
-          width: 5,
+          width: UIConstants.getBorderWidth(context, sizeOfWidget),
         ),
       ),
       child: Column(

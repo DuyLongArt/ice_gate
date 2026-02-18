@@ -11,6 +11,7 @@ class HealthBlock {
   final todaySteps = signal<int>(0);
   final historicalSteps = signal<int>(0);
   final dailyStepGoal = signal<int>(10000);
+  final dailyKcalGoal = signal<int>(2500);
 
   late final totalSteps = computed(
     () => todaySteps.value + historicalSteps.value,

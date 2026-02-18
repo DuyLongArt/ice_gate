@@ -1,8 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ice_shield/ui_layer/ReusableWidget/SettingWidget.dart';
+
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodDashboardPage.dart';
 import 'package:ice_shield/ui_layer/health_page/subpage/FoodInputPage.dart';
 import 'package:ice_shield/ui_layer/home_page/HomePage.dart';
@@ -14,15 +12,16 @@ import 'package:ice_shield/ui_layer/finance_page/FinancePage.dart';
 import 'package:ice_shield/ui_layer/social_page/SocialPage.dart';
 import 'package:ice_shield/ui_layer/projects_page/ProjectsPage.dart';
 
+import 'package:ice_shield/ui_layer/home_page/IceGateAppBar.dart';
+
 class MainShell extends StatelessWidget {
   final Widget child;
 
   const MainShell({super.key, required this.child});
-
   Widget _getMainButtonForRoute(BuildContext context, String route) {
     final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
-    final cross = sqrt(width * width + height * height);
+    // final height = MediaQuery.of(context).size.height;
+    // final cross = sqrt(width * width + height * height);
 
     final double responsiveSize = (width * 0.18).clamp(56.0, 70.0);
 
@@ -98,45 +97,13 @@ class MainShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentRoute = GoRouterState.of(context).uri.path;
 
-    return Scaffold(
-      // --- PERSISTENT APP BAR ---
-      appBar: AppBar(
-        title: const Text(
-          "ICE Gate",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        actions: [
-          // 1. Navigate to Home
-          IconButton(
-            icon: const Icon(Icons.home),
-            tooltip: "Home",
-            iconSize: 30,
-            onPressed: () {
-              try {
-                context.pop();
-              } catch (e) {
-                context.go('/');
-              }
-            },
-          ),
-          // 2. Navigate to Canvas (Your Grid)
-          IconButton(
-            icon: const Icon(Icons.grid_view),
-            tooltip: "Canvas",
-            onPressed: () => context.go('/canvas'),
-            iconSize: 30,
-          ),
+    final bool shouldHideAppBar =
+        currentRoute == '/projects/focus' ||
+        currentRoute.startsWith('/widgets/webview');
 
-          // 3. Navigate to Settings (Example)
-          // IconButton(
-          //   icon: const Icon(Icons.settings),
-          //   tooltip: "Settings",
-          //   onPressed: () => context.go('/settings'),
-          // ),
-          SettingsWidget.icon(context,size:30),
-        ],
-      ),
+    return Scaffold(
+      // --- PERSISTENT APP BAR (Hidden for Focus Page & WebView) ---
+      appBar: shouldHideAppBar ? null : const IceGateAppBar(),
 
       // --- DYNAMIC BODY (Changes based on route) ---
       bottomNavigationBar: Padding(

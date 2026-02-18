@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/rendering.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart'; // Import generated code
 import 'package:signals/signals.dart';
 import 'package:drift/drift.dart' as drift;
@@ -7,6 +6,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/GrowthBlock.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/Widgets/ScoreBlock.dart';
 import 'package:ice_shield/initial_layer/FocusAudioHandler.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:live_activities/live_activities.dart';
 import 'package:audioplayers/audioplayers.dart';
 
@@ -36,6 +36,7 @@ class FocusBlock {
   // Dependencies
   final FocusSessionsDAO _focusSessionDao;
   final int _currentPersonId;
+  final LocalNotificationService? _notificationService;
 
   // Configuration (Defaults)
   static const int _initialFocusMin = 25;
@@ -87,12 +88,21 @@ class FocusBlock {
     required FocusSessionsDAO focusSessionDao,
     required int personId,
     FocusAudioHandler? audioHandler,
+    LocalNotificationService? notificationService,
   }) : _focusSessionDao = focusSessionDao,
        _currentPersonId = personId,
-       _audioHandler = audioHandler;
+       _audioHandler = audioHandler,
+       _notificationService = notificationService {
+    print(
+      "FocusBlock Checking: AudioHandler injected: ${_audioHandler != null}",
+    );
+  }
 
   // --- Initialization ---
   Future<void> init() async {
+    print(
+      "FocusBlock Checking: init called. AudioHandler is ${_audioHandler != null ? 'PRESENT' : 'NULL'}",
+    );
     try {
       await fetchDailyStats();
       // Use correct bundle ID for app group
@@ -119,21 +129,47 @@ class FocusBlock {
     // debugPrint("audio: "+ _audioHandler.mediaItem.value.toString());]
     try {
       if (!fromSystem) {
-        bool sourceSet = await _updateAudioSource();
-        if (sourceSet) {
+        // Attempt to set source, but proceed to 'play' (start session) regardless
+        // This ensures the lock screen controls appear even for silent sessions or failed assets
+        try {
+          await _updateAudioSource();
           _audioHandler?.play();
-        } else {
-          print("FocusBlock: Skipping audio playback (no valid source).");
+        } catch (audioError) {
+          print(
+            "FocusBlock: Audio setup failed ($audioError), proceeding with silent timer.",
+          );
+          // Even if audio fails, we still want the timer to run and notifications to show
         }
       }
+
+      // ALWAYS show status notification to satisfy "both must show" requirement
+      _notificationService?.showNotification(
+        888,
+        "Focus Session Active",
+        "Stay focused! ${_formatTime(remainingTime.value)} remaining",
+      );
     } catch (e) {
       print("FocusBlock startTimer error: $e");
     }
 
     // Start Live Activity asynchronously without blocking the timer
-    _createLiveActivity();
+    // Wrap in try-catch to prevent debug crashes on Simulator/Device without Widget Extension
+    try {
+      _createLiveActivity();
+    } catch (e) {
+      print(
+        "FocusBlock: Live Activity skipped (Platform Exception likely): $e",
+      );
+    }
 
     print("FocusBlock: Starting Timer.periodic");
+    // Show initial notification immediately
+    _notificationService?.showNotification(
+      888,
+      "Focus Session Active",
+      "${_formatTime(remainingTime.value)} remaining",
+    );
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (remainingTime.value > 0) {
         remainingTime.value--;
@@ -147,12 +183,17 @@ class FocusBlock {
 
         // Sync to Media Metadata (Secondary, only if audio is active)
         try {
-          if (_audioHandler?.mediaItem.value != null) {
-            _updateMediaMetadata();
-          }
+          _updateMediaMetadata();
         } catch (e) {
           print("FocusBlock: Media Metadata Update Error: $e");
         }
+
+        // Update notification every second for a live countdown experience
+        _notificationService?.showNotification(
+          888,
+          "Focus Session Active",
+          "${_formatTime(remainingTime.value)} remaining",
+        );
       } else {
         completeSession();
       }
@@ -161,23 +202,68 @@ class FocusBlock {
 
   Future<void> _createLiveActivity() async {
     try {
+      String songName;
+      if (customSoundPath.value != null) {
+        songName = customSoundPath.value!.split('/').last;
+      } else {
+        songName = _getThemeSoundAsset(timerTheme.value).split('/').last;
+      }
+      if (songName.contains('.')) {
+        songName = songName.substring(0, songName.lastIndexOf('.'));
+      }
+      songName = songName.replaceAll('_', ' ').toUpperCase();
+
       _activityId = await _liveActivities
           .createActivity('group.duylong.art.iceshield', {
-            'title': "${currentSessionType.value} Practise",
-            'time': _formatTime(remainingTime.value),
-            'progress': remainingTime.value / (focusDuration.value * 60),
+            'title': "ICE Gate Focus",
+            'songName': songName,
+            'cover': "music_cover",
+            'artist': currentSessionType.value,
+            'progress':
+                1.0 -
+                (remainingTime.value /
+                    _getDurationForType(currentSessionType.value)),
           });
     } catch (e) {
-      print("Error creating Live Activity: $e");
+      // Check if it's the known "missing widget extension" error
+      if (e.toString().contains("ActivityInput error 0") ||
+          e.toString().contains("LIVE_ACTIVITY_ERROR")) {
+        print(
+          "FocusBlock: Live Activity not available (Widget Extension missing). Skipping.",
+        );
+      } else {
+        print("FocusBlock: Error creating Live Activity: $e");
+      }
     }
   }
 
   void _updateLiveActivity() {
     if (_activityId != null) {
-      _liveActivities.updateActivity(_activityId!, {
-        'time': _formatTime(remainingTime.value),
-        'progress': remainingTime.value / (focusDuration.value * 60),
-      });
+      String songName;
+      if (customSoundPath.value != null) {
+        songName = customSoundPath.value!.split('/').last;
+      } else {
+        songName = _getThemeSoundAsset(timerTheme.value).split('/').last;
+      }
+      if (songName.contains('.')) {
+        songName = songName.substring(0, songName.lastIndexOf('.'));
+      }
+      songName = songName.replaceAll('_', ' ').toUpperCase();
+
+      try {
+        _liveActivities.updateActivity(_activityId!, {
+          'title': "ICE Gate Focus",
+          'songName': songName,
+          'cover': "music_cover",
+          'artist': currentSessionType.value,
+          'progress':
+              1.0 -
+              (remainingTime.value /
+                  _getDurationForType(currentSessionType.value)),
+        });
+      } catch (e) {
+        print("FocusBlock: Live Activity update failed (quietly skipped): $e");
+      }
     }
   }
 
@@ -200,6 +286,9 @@ class FocusBlock {
     if (!fromSystem) {
       _audioHandler?.pause();
     }
+    // Cancel fallback notification
+    _notificationService?.cancelNotification(888);
+
     if (_activityId != null) {
       _liveActivities.endActivity(_activityId!);
       _activityId = null;
@@ -209,14 +298,29 @@ class FocusBlock {
   void _updateMediaMetadata() {
     if (_audioHandler == null) return;
 
-    String title =
-        "${currentSessionType.value}: ${_formatTime(remainingTime.value)}";
-    String artist = "Theme: ${timerTheme.value}";
+    String songDisplayName;
+    String rawSongName;
     if (customSoundPath.value != null) {
-      artist = isCustomSoundLocal.value
-          ? "Local Audio"
-          : "Preset: ${customSoundPath.value!.split('/').last}";
+      rawSongName = customSoundPath.value!.split('/').last;
+    } else {
+      rawSongName = _getThemeSoundAsset(timerTheme.value).split('/').last;
     }
+
+    if (rawSongName.contains('.')) {
+      rawSongName = rawSongName.substring(0, rawSongName.lastIndexOf('.'));
+    }
+    songDisplayName = rawSongName
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((s) {
+          if (s.isEmpty) return s;
+          return s[0].toUpperCase() + s.substring(1);
+        })
+        .join(' ');
+
+    String title = songDisplayName;
+    String artist =
+        "${currentSessionType.value} | Time Left: ${_formatTime(remainingTime.value)}";
 
     final totalSecs = _getDurationForType(currentSessionType.value);
     _audioHandler.updateMetadata(
@@ -227,24 +331,50 @@ class FocusBlock {
     );
   }
 
+  static const String SILENT_MODE = 'SILENT';
+
   Future<bool> _updateAudioSource() async {
-    if (_audioHandler == null) return false;
+    if (_audioHandler == null) {
+      print(
+        "FocusBlock: AudioHandler is null (Background Audio Service not ready).",
+      );
+      return false;
+    }
 
     try {
+      // 1. Check for Silent Mode
+      if (customSoundPath.value == SILENT_MODE) {
+        await _audioHandler.stop(); // Ensure silence
+        return false; // Valid, but no "playback" needed
+      }
+
       Source targetSource;
       if (customSoundPath.value != null) {
-        targetSource = isCustomSoundLocal.value
-            ? DeviceFileSource(customSoundPath.value!)
-            : AssetSource(customSoundPath.value!);
+        if (customSoundPath.value!.startsWith('http')) {
+          targetSource = UrlSource(customSoundPath.value!);
+        } else {
+          targetSource = isCustomSoundLocal.value
+              ? DeviceFileSource(customSoundPath.value!)
+              : AssetSource(customSoundPath.value!);
+        }
       } else {
         final soundAsset = _getThemeSoundAsset(timerTheme.value);
-        targetSource = AssetSource(soundAsset);
+        if (soundAsset.startsWith('http')) {
+          targetSource = UrlSource(soundAsset);
+        } else {
+          targetSource = AssetSource(soundAsset);
+        }
       }
+
+      // 2. Attempt to check if asset exists (Pseudo-check)
+      // Since we can't easily check assets synchronously without context, we rely on try-catch
 
       await _audioHandler.setSource(targetSource);
       return true;
     } catch (e) {
-      print("FocusBlock: Failed to set audio source: $e");
+      // Suppress full stack trace for known "empty asset" issue during development
+      print("FocusBlock: Audio playback skipped (Source Error: $e)");
+      // Optional: fallback to silent if audio fails?
       return false;
     }
   }
@@ -280,7 +410,8 @@ class FocusBlock {
         return 'sounds/fire_crackle.mp3';
       case 'Default':
       default:
-        return 'sounds/rain.mp3';
+        // Use a remote URL because local assets are corrupted (0 bytes)
+        return 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
     }
   }
 
@@ -320,6 +451,18 @@ class FocusBlock {
 
     // Auto-switch to break? Or wait for user.
     // For now, let's just reset to default or next steps.
+
+    // Notify User
+    _notificationService?.showNotification(
+      999,
+      currentSessionType.value == 'Focus'
+          ? "Focus Session Complete"
+          : "Break Over",
+      currentSessionType.value == 'Focus'
+          ? "Excellent work! Take a well-deserved break."
+          : "Time to get back into the flow zone.",
+    );
+
     resetTimer();
   }
 

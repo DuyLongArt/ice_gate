@@ -16,6 +16,8 @@ import '../../orchestration_layer/Action/WebView/WebViewWidget.dart';
 // Ensure you import your DAO file here, e.g.:
 // import '../../../database/ExternalWidgetsDAO.dart';
 
+import '../UIConstants.dart';
+
 class ExternalDragWidget extends StatefulWidget {
   final int index;
   final WidgetManagerBlock store;
@@ -90,7 +92,13 @@ class _ExternalDragWidgetState extends State<ExternalDragWidget> {
                   ? Colors.white.withOpacity(0.05)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor, width: isHovering ? 2 : 1),
+              border: Border.all(
+                color: borderColor,
+                width: UIConstants.getBorderWidth(
+                  context,
+                  1000,
+                ), // External widgets are large by default
+              ),
             ),
             child: isEmpty
                 ? const Center(child: Icon(Icons.add, color: Colors.white24))

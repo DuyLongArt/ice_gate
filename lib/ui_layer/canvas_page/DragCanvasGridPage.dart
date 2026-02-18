@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:signals_flutter/signals_flutter.dart';
 import 'package:ice_shield/ui_layer/home_page/MainButton.dart';
@@ -29,12 +31,16 @@ void buildAddCell(BuildContext context) {
 class DragCanvasGrid extends StatefulWidget {
   const DragCanvasGrid({super.key});
 
-  // Global signal for store state to fix accessibility and static context issues
-  static final isOpenStore = signal<bool>(false);
+  // Global signal for tab state
+  static final activeCanvasTab = signal<String>('none');
 
   static void toggleStore() {
     print("Toggle store");
-    isOpenStore.value = !isOpenStore.value;
+    if (activeCanvasTab.value == 'store') {
+      activeCanvasTab.value = 'none';
+    } else {
+      activeCanvasTab.value = 'store';
+    }
   }
 
   static Widget icon(BuildContext context, {double? size}) {
@@ -42,7 +48,19 @@ class DragCanvasGrid extends StatefulWidget {
       type: "grid",
       destination: "/canvas",
       size: size,
-      icon: Icons.grid_view,
+      // Note: Some MainButton implementations use 'icon' as a fallback.
+      // If it looks weird, try setting icon to Icons.circle (invisible) or null.
+      // icon: Icons.grid_view,
+      iconWidget: Center(
+        child: Transform.rotate(
+          angle: 45 * math.pi / 180,
+          child: Icon(
+            Icons.grid_view,
+            color: Colors.white,
+            size: size! * 0.6, // Ensure the icon respects the passed size
+          ),
+        ),
+      ),
       mainFunction: toggleStore,
     );
   }
@@ -172,7 +190,7 @@ class _DragCanvasState extends State<DragCanvas> {
         const SizedBox(height: 16),
 
         Watch((context) {
-          final isStoreOpen = DragCanvasGrid.isOpenStore.value;
+          final activeTab = DragCanvasGrid.activeCanvasTab.value;
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             transitionBuilder: (child, animation) {
@@ -186,7 +204,9 @@ class _DragCanvasState extends State<DragCanvas> {
                 child: child,
               );
             },
-            child: isStoreOpen ? const StoreWidget() : const SizedBox.shrink(),
+            child: activeTab == 'store'
+                ? const StoreWidget()
+                : const SizedBox.shrink(),
           );
         }),
       ],

@@ -40,6 +40,7 @@ class MainButton extends StatefulWidget {
   final List<SubButton>? subButtons;
   final VoidCallback mainFunction;
   final VoidCallback? doubleClickFunction;
+  final VoidCallback? onSwipeUp;
 
   const MainButton({
     super.key,
@@ -54,6 +55,7 @@ class MainButton extends StatefulWidget {
     this.iconColor,
     this.size,
     this.doubleClickFunction,
+    this.onSwipeUp,
   });
 
   @override
@@ -283,6 +285,18 @@ class _MainButtonState extends State<MainButton>
           onTap: widget.mainFunction,
           onLongPress: _showOverlay,
           onDoubleTap: widget.doubleClickFunction,
+          onVerticalDragEnd: (details) {
+            // Detect swipe up
+            if (details.primaryVelocity != null &&
+                details.primaryVelocity! < -500) {
+              HapticFeedback.mediumImpact();
+              if (widget.onSwipeUp != null) {
+                widget.onSwipeUp!();
+              } else {
+                widget.mainFunction();
+              }
+            }
+          },
           behavior: HitTestBehavior.opaque,
           child: Container(
             width: mainSize,

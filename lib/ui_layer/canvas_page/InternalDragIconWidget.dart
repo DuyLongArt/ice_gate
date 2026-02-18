@@ -11,6 +11,8 @@ import 'StoreWidget.dart';
 // import '../../data_layer/Protocol/Widget/InternalWidgetDragProtocol.dart';
 // import '../../data_layer/Protocol/Widget/WidgetManagerBlock.dart';
 
+import '../UIConstants.dart';
+
 class InternalDragIconWidget extends StatefulWidget {
   final int index;
   final WidgetManagerBlock store;
@@ -78,7 +80,11 @@ class _InternalDragIconWidgetState extends State<InternalDragIconWidget> {
               borderRadius: BorderRadius.circular(28),
               border: Border.all(
                 color: borderColor,
-                width: isHovering ? 2.5 : 1.5,
+                width: UIConstants.getBorderWidth(
+                  context,
+                  widget.widthCard,
+                  widget.heightCard,
+                ),
               ),
               boxShadow: isHovering
                   ? [

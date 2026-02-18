@@ -18,6 +18,8 @@ import '../../initial_layer/FireAPI/UrlNavigate.dart'; // Added for navigation
 import '../widget_page/AddPluginForm.dart';
 // import '../WidgetCard.dart'; // We will use BuildCard exclusively for the store to ensure consistent dragging size
 
+import '../UIConstants.dart';
+
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../finance_page/services/FinanceService.dart';
@@ -373,6 +375,14 @@ class BuildCard extends StatelessWidget {
             height: cardHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: color.withOpacity(0.3),
+                width: UIConstants.getBorderWidth(
+                  context,
+                  cardWidth,
+                  cardHeight,
+                ),
+              ),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

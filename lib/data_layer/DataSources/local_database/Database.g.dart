@@ -14835,7 +14835,7 @@ class $CustomNotificationsTableTable extends CustomNotificationsTable
   late final GeneratedColumn<String> repeatFrequency = GeneratedColumn<String>(
     'repeat_frequency',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('none'),
@@ -14992,7 +14992,7 @@ class $CustomNotificationsTableTable extends CustomNotificationsTable
       repeatFrequency: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}repeat_frequency'],
-      )!,
+      ),
       repeatDays: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}repeat_days'],
@@ -15020,7 +15020,7 @@ class CustomNotificationData extends DataClass
   final String title;
   final String content;
   final DateTime scheduledTime;
-  final String repeatFrequency;
+  final String? repeatFrequency;
   final String? repeatDays;
   final bool isEnabled;
   final DateTime createdAt;
@@ -15029,7 +15029,7 @@ class CustomNotificationData extends DataClass
     required this.title,
     required this.content,
     required this.scheduledTime,
-    required this.repeatFrequency,
+    this.repeatFrequency,
     this.repeatDays,
     required this.isEnabled,
     required this.createdAt,
@@ -15041,7 +15041,9 @@ class CustomNotificationData extends DataClass
     map['title'] = Variable<String>(title);
     map['content'] = Variable<String>(content);
     map['scheduled_time'] = Variable<DateTime>(scheduledTime);
-    map['repeat_frequency'] = Variable<String>(repeatFrequency);
+    if (!nullToAbsent || repeatFrequency != null) {
+      map['repeat_frequency'] = Variable<String>(repeatFrequency);
+    }
     if (!nullToAbsent || repeatDays != null) {
       map['repeat_days'] = Variable<String>(repeatDays);
     }
@@ -15056,7 +15058,9 @@ class CustomNotificationData extends DataClass
       title: Value(title),
       content: Value(content),
       scheduledTime: Value(scheduledTime),
-      repeatFrequency: Value(repeatFrequency),
+      repeatFrequency: repeatFrequency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repeatFrequency),
       repeatDays: repeatDays == null && nullToAbsent
           ? const Value.absent()
           : Value(repeatDays),
@@ -15075,7 +15079,7 @@ class CustomNotificationData extends DataClass
       title: serializer.fromJson<String>(json['title']),
       content: serializer.fromJson<String>(json['content']),
       scheduledTime: serializer.fromJson<DateTime>(json['scheduledTime']),
-      repeatFrequency: serializer.fromJson<String>(json['repeatFrequency']),
+      repeatFrequency: serializer.fromJson<String?>(json['repeatFrequency']),
       repeatDays: serializer.fromJson<String?>(json['repeatDays']),
       isEnabled: serializer.fromJson<bool>(json['isEnabled']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -15089,7 +15093,7 @@ class CustomNotificationData extends DataClass
       'title': serializer.toJson<String>(title),
       'content': serializer.toJson<String>(content),
       'scheduledTime': serializer.toJson<DateTime>(scheduledTime),
-      'repeatFrequency': serializer.toJson<String>(repeatFrequency),
+      'repeatFrequency': serializer.toJson<String?>(repeatFrequency),
       'repeatDays': serializer.toJson<String?>(repeatDays),
       'isEnabled': serializer.toJson<bool>(isEnabled),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -15101,7 +15105,7 @@ class CustomNotificationData extends DataClass
     String? title,
     String? content,
     DateTime? scheduledTime,
-    String? repeatFrequency,
+    Value<String?> repeatFrequency = const Value.absent(),
     Value<String?> repeatDays = const Value.absent(),
     bool? isEnabled,
     DateTime? createdAt,
@@ -15110,7 +15114,9 @@ class CustomNotificationData extends DataClass
     title: title ?? this.title,
     content: content ?? this.content,
     scheduledTime: scheduledTime ?? this.scheduledTime,
-    repeatFrequency: repeatFrequency ?? this.repeatFrequency,
+    repeatFrequency: repeatFrequency.present
+        ? repeatFrequency.value
+        : this.repeatFrequency,
     repeatDays: repeatDays.present ? repeatDays.value : this.repeatDays,
     isEnabled: isEnabled ?? this.isEnabled,
     createdAt: createdAt ?? this.createdAt,
@@ -15184,7 +15190,7 @@ class CustomNotificationsTableCompanion
   final Value<String> title;
   final Value<String> content;
   final Value<DateTime> scheduledTime;
-  final Value<String> repeatFrequency;
+  final Value<String?> repeatFrequency;
   final Value<String?> repeatDays;
   final Value<bool> isEnabled;
   final Value<DateTime> createdAt;
@@ -15237,7 +15243,7 @@ class CustomNotificationsTableCompanion
     Value<String>? title,
     Value<String>? content,
     Value<DateTime>? scheduledTime,
-    Value<String>? repeatFrequency,
+    Value<String?>? repeatFrequency,
     Value<String?>? repeatDays,
     Value<bool>? isEnabled,
     Value<DateTime>? createdAt,
@@ -28368,7 +28374,7 @@ typedef $$CustomNotificationsTableTableCreateCompanionBuilder =
       required String title,
       required String content,
       required DateTime scheduledTime,
-      Value<String> repeatFrequency,
+      Value<String?> repeatFrequency,
       Value<String?> repeatDays,
       Value<bool> isEnabled,
       Value<DateTime> createdAt,
@@ -28379,7 +28385,7 @@ typedef $$CustomNotificationsTableTableUpdateCompanionBuilder =
       Value<String> title,
       Value<String> content,
       Value<DateTime> scheduledTime,
-      Value<String> repeatFrequency,
+      Value<String?> repeatFrequency,
       Value<String?> repeatDays,
       Value<bool> isEnabled,
       Value<DateTime> createdAt,
@@ -28577,7 +28583,7 @@ class $$CustomNotificationsTableTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<DateTime> scheduledTime = const Value.absent(),
-                Value<String> repeatFrequency = const Value.absent(),
+                Value<String?> repeatFrequency = const Value.absent(),
                 Value<String?> repeatDays = const Value.absent(),
                 Value<bool> isEnabled = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -28597,7 +28603,7 @@ class $$CustomNotificationsTableTableTableManager
                 required String title,
                 required String content,
                 required DateTime scheduledTime,
-                Value<String> repeatFrequency = const Value.absent(),
+                Value<String?> repeatFrequency = const Value.absent(),
                 Value<String?> repeatDays = const Value.absent(),
                 Value<bool> isEnabled = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),

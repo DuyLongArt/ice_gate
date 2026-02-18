@@ -81,7 +81,11 @@ class LocalNotificationService {
     );
 
     // Schedule daily briefing and custom notifications
-    await syncAllNotifications();
+    try {
+      await syncAllNotifications();
+    } catch (e) {
+      print("Warning: Failed to sync notifications on startup: $e");
+    }
   }
 
   /// Toggle notifications on or off
@@ -99,6 +103,10 @@ class LocalNotificationService {
   /// Cancel all pending notifications
   Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
+  }
+
+  Future<void> cancelNotification(int id) async {
+    await _notificationsPlugin.cancel(id: id);
   }
 
   /// Sync all notifications (daily + custom from DB)
@@ -151,7 +159,7 @@ class LocalNotificationService {
     final scheduledDate = tz.TZDateTime.from(data.scheduledTime, tz.local);
     DateTimeComponents? matchComponents;
 
-    switch (data.repeatFrequency) {
+    switch (data.repeatFrequency ?? 'none') {
       case 'daily':
         matchComponents = DateTimeComponents.time;
         break;
@@ -283,24 +291,69 @@ class LocalNotificationService {
     return scheduledDate;
   }
 
-  // 4. Show a simple notification (respects enabled toggle)
+  // 4. Show a simple notification (respects enabled toggle, unless forced for Focus)
+  // Updated to handle channel selection based on ID or content
   Future<void> showNotification(int id, String title, String body) async {
+    // Determine channel based on ID or content
+    // ID 888 is strictly for Focus Timer
+    if (id == 888) {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+            'focus_channel',
+            'Focus Session',
+            channelDescription: 'Active focus session timer',
+            importance: Importance.max,
+            priority: Priority.high,
+            ongoing: true,
+            autoCancel: false,
+            silent: true, // Don't make sound on updates
+          );
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBanner: true,
+          presentSound: false,
+          presentList: true, // Show in Notification Center
+          interruptionLevel: InterruptionLevel.active,
+        ),
+        macOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBanner: true,
+          presentSound: false,
+        ),
+      );
+      await _notificationsPlugin.show(
+        id: id,
+        title: title,
+        body: body,
+        notificationDetails: platformChannelSpecifics,
+      );
+      return;
+    }
+
     if (!notificationsEnabled.value) return;
+
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+          'main_channel', // Channel ID
+          'Main Channel', // Channel Name
+          channelDescription: 'General notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: DarwinNotificationDetails(),
+      macOS: DarwinNotificationDetails(),
+    );
 
     await _notificationsPlugin.show(
       id: id,
       title: title,
       body: body,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'main_channel', // Channel ID
-          'Main Channel', // Channel Name
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(),
-        macOS: DarwinNotificationDetails(),
-      ),
+      notificationDetails: platformChannelSpecifics,
     );
   }
 }

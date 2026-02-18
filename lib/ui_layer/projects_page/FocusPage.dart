@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 
 import 'package:flutter/material.dart';
+import 'package:ice_shield/ui_layer/UIConstants.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
@@ -45,7 +46,7 @@ final timerThemes = [
   ),
   TimerThemeInfo(
     'Emerald Forest',
-    const Color(0xFF006400),
+    const Color(0xFF006350),
     Icons.forest_rounded,
     soundAsset: 'sounds/birds.mp3',
   ),
@@ -245,12 +246,12 @@ class _FocusPageState extends State<FocusPage> {
           Positioned(
             top: -50,
             left: -50,
-            child: _BlurCircle(color: modeColor.withOpacity(0.15), size: 300),
+            child: _BlurCircle(color: modeColor.withOpacity(0.15), size: 350),
           ),
           Positioned(
             bottom: 100,
             right: -100,
-            child: _BlurCircle(color: modeColor.withOpacity(0.1), size: 400),
+            child: _BlurCircle(color: modeColor.withOpacity(0.1), size: 350),
           ),
 
           SafeArea(
@@ -266,25 +267,51 @@ class _FocusPageState extends State<FocusPage> {
                     ),
                     child: Row(
                       children: [
-                        IconButton.filledTonal(
-                          onPressed: () => context.pop(),
-                          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          "Focus Space",
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
+                        // Custom Back Button with Glassy feel
+                        Container(
+                          margin: const EdgeInsets.only(left: 8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            onPressed: () => context.pop(),
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 20,
+                            ),
+                            color: Theme.of(context).colorScheme.onSurface,
+                            tooltip: "Back",
                           ),
                         ),
-                        const Spacer(),
+
+                        // Centered Title
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              "FOCUS SPACE",
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 4.0, // Premium spacing
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Balance Space (matches back button size approx)
+                        const SizedBox(width: 48),
                       ],
                     ),
                   ),
                 ),
                 SliverToBoxAdapter(
-                  child: _SessionTypeToggle(focusBlock: focusBlock),
+                  child: Center(
+                    child: _SessionTypeToggle(focusBlock: focusBlock),
+                  ),
                 ),
                 // Selection Area (Project & Task)
                 SliverToBoxAdapter(
@@ -313,38 +340,44 @@ class _FocusPageState extends State<FocusPage> {
                 ),
 
                 // Timer Main Component
+                // const SizedBox(height: 40),
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: Column(
-                    children: [
-                      const Spacer(),
-                      _TimerCircle(
-                        progress: progress,
-                        timeStr: timeStr,
-                        modeColor: modeColor,
-                        sessionType: sessionType,
-                        isRunning: isRunning,
-                        focusBlock: focusBlock,
-                        totalDuration: totalDuration,
-                        themeName: themeName,
-                      ),
-                      const Spacer(),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Spacer(),
+                        _TimerCircle(
+                          progress: progress,
+                          timeStr: timeStr,
+                          modeColor: modeColor,
+                          sessionType: sessionType,
+                          isRunning: isRunning,
+                          focusBlock: focusBlock,
+                          totalDuration: totalDuration,
+                          themeName: themeName,
+                        ),
+                        const Spacer(),
 
-                      // Detailed Controls Consolidated into Circle
-                      const SizedBox(height: 40),
-                      const SizedBox(height: 40),
+                        // Detailed Controls Consolidated into Circle
+                        const SizedBox(height: 120),
 
-                      // Stats & History Preview
-                      _StatsGrid(
-                        sessionsCount: sessionsCount,
-                        totalStudyTime: totalStudyTime,
-                        modeColor: modeColor,
-                      ),
+                        // Stats & History Preview
+                        _StatsGrid(
+                          sessionsCount: sessionsCount,
+                          totalStudyTime: totalStudyTime,
+                          modeColor: modeColor,
+                        ),
 
-                      const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                      _RecentHistoryHeader(),
-                    ],
+                        _RecentHistoryHeader(),
+                        const SizedBox(
+                          height: 24,
+                        ), // Add bottom padding for balance
+                      ],
+                    ),
                   ),
                 ),
 
@@ -584,7 +617,11 @@ class _ProjectSelector extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.unfold_more_rounded, size: 20, color: Colors.grey),
+            Icon(
+              Icons.rocket_launch_rounded, // More expressive
+              size: 20,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+            ),
           ],
         ),
       ),
@@ -691,7 +728,7 @@ class _TaskSelector extends StatelessWidget {
             Icon(
               Icons.bolt_rounded,
               color: Theme.of(context).colorScheme.primary,
-              size: 18,
+              size: 22, // Slightly larger
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -728,10 +765,10 @@ class _TaskSelector extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.keyboard_arrow_right_rounded,
+            Icon(
+              Icons.auto_awesome_rounded, // More expressive
               size: 20,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
             ),
           ],
         ),
@@ -902,6 +939,17 @@ class _TimerCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final trackSize = UIConstants.getTimerTrackSize(context);
+    final containerSize = UIConstants.getTimerContainerSize(context);
+    final rippleSize = UIConstants.getTimerRippleSize(context);
+
+    // Calculate offsets to center the ripple
+    // The stack alignment is center, so Positioned relative to the stack center needs careful handling
+    // Actually, if we use Stack(alignment: Alignment.center), we can just use a centered Container with the ripple size
+    // inside a Center widget or just let alignment handle it if the stack is big enough.
+    // Better: Use a Container with width/height = rippleSize and ensure it's centered.
+
     return GestureDetector(
       onTap: () {
         if (isRunning) {
@@ -912,18 +960,25 @@ class _TimerCircle extends StatelessWidget {
       },
       child: Stack(
         alignment: Alignment.center,
+        clipBehavior: Clip.none, // Allow glow/ripple to expand beyond
         children: [
+          // Pulsing Effect (Behind everything)
+          if (isRunning)
+            SizedBox(
+              width: rippleSize,
+              height: rippleSize,
+              child: _RippleEffect(color: modeColor),
+            ),
+
           // 1. Multi-layered Volumetric Glow
           Container(
-            width: 260,
-            height: 260,
-            // padding: EdgeInsets.all(50),
+            width: containerSize,
+            height: containerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-
               border: Border.all(
-                color: modeColor.withValues(alpha: 0.4),
-                width: 15,
+                color: modeColor.withValues(alpha: 0.7),
+                width: 30, // Could also be responsive if needed
               ),
               boxShadow: [
                 BoxShadow(
@@ -942,7 +997,7 @@ class _TimerCircle extends StatelessWidget {
 
           // 2. Base Track (Minimalist)
           CustomPaint(
-            size: const Size(240, 240),
+            size: Size(trackSize, trackSize),
             painter: _GloriousTimerPainter(
               progress: 1.0,
               color: modeColor.withOpacity(0.05),
@@ -958,11 +1013,18 @@ class _TimerCircle extends StatelessWidget {
             duration: const Duration(milliseconds: 1200),
             curve: Curves.easeOutQuint,
             builder: (context, value, _) => CustomPaint(
-              size: const Size(300, 300),
+              // Progress ring is slightly larger than track usually, or same.
+              // Let's keep the correlation: trackSize + padding
+              size: Size(trackSize + 20, trackSize + 20),
               painter: _GloriousTimerPainter(
                 progress: value,
-                color: modeColor,
-                strokeWidth: 4,
+                color: modeColor.withValues(
+                  alpha: 0.8,
+                  green: 10,
+                  blue: 10,
+                  red: 10,
+                ),
+                strokeWidth: 5,
                 themeName: themeName,
               ),
             ),
@@ -970,8 +1032,8 @@ class _TimerCircle extends StatelessWidget {
 
           // 4. Subtle Inner Atmosphere
           Container(
-            width: 200,
-            height: 200,
+            width: trackSize * 0.8, // Responsive inner size
+            height: trackSize * 0.8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
@@ -979,9 +1041,6 @@ class _TimerCircle extends StatelessWidget {
               ),
             ),
           ),
-
-          // Pulsing Effect
-          if (isRunning) _RippleEffect(color: modeColor),
 
           // Theme Specific Decorator
           _ThemeVibeDecorator(
@@ -998,25 +1057,42 @@ class _TimerCircle extends StatelessWidget {
               Text(
                 timeStr,
                 style: TextStyle(
-                  fontSize: 76,
-                  fontWeight: FontWeight.w800, // Bold as requested
+                  fontSize: 60,
+                  fontWeight: FontWeight.w900, // Even bolder
                   fontFeatures: const [FontFeature.tabularFigures()],
-                  color: modeColor,
-                  letterSpacing: -1,
+                  color: _getContrastColor(modeColor, colorScheme.surface),
+                  letterSpacing: -2,
                   shadows: [
-                    Shadow(color: modeColor.withOpacity(0.3), blurRadius: 30),
+                    Shadow(color: modeColor.withOpacity(0.2), blurRadius: 20),
                   ],
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                isRunning ? "FLOW STATE ACTIVE" : "BREATHING",
-                style: TextStyle(
-                  fontSize: 10,
-                  letterSpacing: 4,
-                  color: modeColor.withOpacity(0.5),
-                  fontWeight: FontWeight.w400,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isRunning ? Icons.bolt_rounded : Icons.spa_rounded,
+                    size: 14,
+                    color: _getContrastColor(
+                      modeColor,
+                      colorScheme.surface,
+                    ).withOpacity(0.8),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    isRunning ? "FLOW STATE ACTIVE" : "BREATHING",
+                    style: TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 2,
+                      color: _getContrastColor(
+                        modeColor,
+                        colorScheme.surface,
+                      ).withOpacity(0.9),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
               _TimerControls(
@@ -1362,7 +1438,7 @@ class _RippleEffectState extends State<_RippleEffect>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 3),
+      duration: const Duration(seconds: 2), // Faster for more energy
     )..repeat();
   }
 
@@ -1399,12 +1475,15 @@ class _RipplePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final maxRadius = size.width / 2;
-    // Base radius of the timer circle is 150 (width 300 / 2)
+    // Base radius of the timer circle is 150 (width 350 / 2) -> actually depends on screen size now but let's keep it relative or use fixed since the ripple container is what matters
+    // Ideally we should pass the base radius, but for now let's stick to the visual effect requested.
+    // The previous code had const baseRadius = 150.0;
     const baseRadius = 150.0;
 
-    for (int i = 0; i < 3; i++) {
-      // Stagger the waves
-      final progress = (animationValue + (i * 0.4)) % 1.0;
+    // INCREASED WAVE COUNT to 5
+    for (int i = 0; i < 5; i++) {
+      // Stagger the waves (1.0 / 5 = 0.2)
+      final progress = (animationValue + (i * 0.2)) % 1.0;
 
       // Only draw if outside the base circle
       final currentRadius = baseRadius + (maxRadius - baseRadius) * progress;
@@ -1412,20 +1491,21 @@ class _RipplePainter extends CustomPainter {
       // Fade out as it expands
       double opacity = (1.0 - progress).clamp(0.0, 1.0);
       opacity = math
-          .pow(opacity, 2.0)
-          .toDouble(); // Exponential fade for smoothness
+          .pow(opacity, 1.5) // Less aggressive fade for more visibility
+          .toDouble();
 
       final paint = Paint()
-        ..color = color.withOpacity(opacity * 0.15)
+        ..color = color
+            .withOpacity(opacity * 0.3) // Higher opacity
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.0; // Consistently thin for minimalism
+        ..strokeWidth = 2.0; // Thicker stroke
 
       // Draw the ring
       canvas.drawCircle(center, currentRadius, paint);
 
       // Optional: Add a second filled circle with very low opacity for "glow" feel
       final glowPaint = Paint()
-        ..color = color.withOpacity(opacity * 0.05)
+        ..color = color.withOpacity(opacity * 0.1)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(center, currentRadius, glowPaint);
     }
@@ -1454,7 +1534,7 @@ class _ThemeVibeDecorator extends StatelessWidget {
     if (!isRunning) return const SizedBox.shrink();
 
     return ClipOval(
-      child: SizedBox(width: 300, height: 300, child: _buildEffect()),
+      child: SizedBox(width: 420, height: 420, child: _buildEffect()),
     );
   }
 
@@ -2191,7 +2271,7 @@ class _TimerSettingsSheet extends StatelessWidget {
                 min: 1,
                 color: theme.colorScheme.primary,
                 onChanged: (val) {
-                  HapticFeedback.vibrate();
+                  HapticFeedback.mediumImpact();
                   focusBlock.setDurations(focus: val.toInt());
                 },
               ),
@@ -2203,7 +2283,7 @@ class _TimerSettingsSheet extends StatelessWidget {
                 min: 1,
                 color: Colors.teal,
                 onChanged: (val) {
-                  HapticFeedback.vibrate();
+                  HapticFeedback.mediumImpact();
                   focusBlock.setDurations(short: val.toInt());
                 },
               ),
@@ -2214,7 +2294,10 @@ class _TimerSettingsSheet extends StatelessWidget {
                 max: 45,
                 min: 5,
                 color: Colors.blue,
-                onChanged: (val) => focusBlock.setDurations(long: val.toInt()),
+                onChanged: (val) {
+                  HapticFeedback.heavyImpact();
+                  focusBlock.setDurations(long: val.toInt());
+                },
               ),
               const SizedBox(height: 24),
               Text(
@@ -2814,4 +2897,28 @@ class _SoundOption extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _getContrastColor(Color baseColor, Color backgroundColor) {
+  // Basic luminance check to ensure text is readable
+  // If the base color is too close to light background, return a darker version or onSurface
+  final double bgLuminance = backgroundColor.computeLuminance();
+  final double colorLuminance = baseColor.computeLuminance();
+
+  // If background is light (high luminance) and color is also light
+  if (bgLuminance > 0.6 && colorLuminance > 0.6) {
+    // Return a darker version or a fallback dark color
+    return HSLColor.fromColor(baseColor)
+        .withLightness(
+          (HSLColor.fromColor(baseColor).lightness - 0.4).clamp(0.0, 1.0),
+        )
+        .toColor();
+  }
+
+  // If background is dark and color is dark
+  if (bgLuminance < 0.4 && colorLuminance < 0.3) {
+    return Colors.white70;
+  }
+
+  return baseColor;
 }

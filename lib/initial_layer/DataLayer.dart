@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/Database.dart';
+import 'package:ice_shield/initial_layer/Notification/NotificationInit.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/DataSeeder.dart';
 import 'package:ice_shield/data_layer/DataSources/local_database/DatabaseAgent.dart'
     as DatabaseAgent;
@@ -155,6 +156,7 @@ class _DataLayerState extends State<DataLayer> {
         focusSessionDao: widget.database.focusSessionsDAO,
         personId: 1,
         audioHandler: context.read<FocusAudioHandler>(),
+        notificationService: context.read<LocalNotificationService>(),
       );
       objectDatabaseBlock = ObjectDatabaseBlock();
       // widgetManagerBlock is initialized later

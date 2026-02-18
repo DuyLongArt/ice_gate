@@ -73,71 +73,85 @@ class ThemeManager {
                             context,
                             'Emerald Haven',
                             'assets/DefaultTheme.json',
+                            Icons.security_rounded,
                           ),
                           _buildThemeOption(
                             context,
-                            'Cyberpunk 2077',
+                            'Cyberpunk 2077 ',
                             'assets/Cyberpunk.json',
+                            Icons.bolt_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Sakura Zen 🌸',
                             'assets/SakuraZen.json',
+                            Icons.spa_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Emerald Forest 🌲',
                             'assets/EmeraldForest.json',
+                            Icons.forest_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Nordic Night ❄️',
                             'assets/NordicNight.json',
+                            Icons.ac_unit_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Royal Velvet 👑',
                             'assets/RoyalVelvet.json',
+                            Icons.workspace_premium_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Midnight Gold',
                             'assets/MidnightGold.json',
+                            Icons.nights_stay_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Deep Sea',
                             'assets/DeepSea.json',
+                            Icons.waves_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Frosty Morning',
                             'assets/Frosty.json',
+                            Icons.wb_sunny_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Light Purple',
                             'assets/LightThemePurple.json',
+                            Icons.auto_awesome_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Purple Seed',
                             'assets/PurpleSeed.json',
+                            Icons.egg_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Midnight Nebula',
                             'assets/MidnightNebula.json',
+                            Icons.cloud_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Sunset Horizon',
                             'assets/SunsetHorizon.json',
+                            Icons.wb_twilight_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Forest Whisper',
                             'assets/ForestWhisper.json',
+                            Icons.hearing_rounded,
                           ),
 
                           Padding(
@@ -168,36 +182,43 @@ class ThemeManager {
                             context,
                             'Seed Blue',
                             'assets/SeedBlue.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Green',
                             'assets/SeedGreen.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Orange',
                             'assets/SeedOrange.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Pink (Dark)',
                             'assets/SeedPink.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Red',
                             'assets/SeedRed.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Teal',
                             'assets/SeedTeal.json',
+                            Icons.palette_rounded,
                           ),
                           _buildThemeOption(
                             context,
                             'Seed Indigo',
                             'assets/SeedIndigo.json',
+                            Icons.palette_rounded,
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -217,6 +238,7 @@ class ThemeManager {
     BuildContext context,
     String name,
     String assetPath,
+    IconData iconData,
   ) {
     final width = MediaQuery.of(context).size.width;
 
@@ -226,7 +248,16 @@ class ThemeManager {
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(0)),
       ),
-      child: SizedBox(width: width * 0.5, child: Text(name, maxLines: 1)),
+      child: SizedBox(
+        width: width * 0.5,
+        child: Row(
+          children: [
+            Icon(iconData, size: 18),
+            const SizedBox(width: 12),
+            Expanded(child: Text(name, maxLines: 1)),
+          ],
+        ),
+      ),
 
       onPressed: () {
         Provider.of<ThemeStore>(context, listen: false).loadTheme(assetPath);

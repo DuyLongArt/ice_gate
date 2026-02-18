@@ -75,7 +75,7 @@ class ThemeStore {
 
   // 4. Initialization (Optional: Load the default Neumorphic theme on startup)
   ThemeStore() {
-    var themeData = "assets/CurrentTheme.json";
+    var themeData = "assets/DefaultTheme.json";
     loadTheme(themeData);
     // print("Theme data name $themeData");
   }

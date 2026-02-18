@@ -132,7 +132,7 @@ class ProfileDashboardPage extends StatelessWidget {
         appBar: AppBar(
           title: // Wrap your Text in AutoSizeText
           AutoSizeText(
-            'Things in life',
+            '4 life elements',
             style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.onSurface,
@@ -157,7 +157,7 @@ class ProfileDashboardPage extends StatelessWidget {
 
               // Section Title
               Text(
-                'Things in life',
+                '4 life elements',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),

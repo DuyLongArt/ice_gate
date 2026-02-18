@@ -4,11 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/services.dart';
 
-import 'package:ice_shield/ui_layer/ReusableWidget/ManaNotificationWidget.dart';
 import 'package:ice_shield/ui_layer/notification_page/NotificationManagerPage.dart';
 import 'package:ice_shield/ui_layer/canvas_page/DragCanvasGridPage.dart';
 import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/FocusBlock.dart';
-import 'package:ice_shield/orchestration_layer/ReactiveBlock/User/HealthBlock.dart';
+import 'package:ice_shield/ui_layer/canvas_page/GoalConfigurationWidget.dart';
 import 'package:provider/provider.dart';
 
 class CanvasDynamicIsland extends StatelessWidget {
@@ -17,11 +16,12 @@ class CanvasDynamicIsland extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Watch((context) {
-      final isStoreOpen = DragCanvasGrid.isOpenStore.value;
+      final activeTab = DragCanvasGrid.activeCanvasTab.value;
+      final isAnyTabOpen = activeTab != 'none';
       return AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         curve: Curves.elasticOut,
-        width: isStoreOpen ? 360 : 300,
+        width: isAnyTabOpen ? 370 : 300,
         height: 52,
         decoration: BoxDecoration(
           color: const Color(
@@ -68,7 +68,7 @@ class CanvasDynamicIsland extends StatelessWidget {
 
             // Center Title
             // Hide title when store is open to make room? Or just shrink it.
-            if (!isStoreOpen)
+            if (!isAnyTabOpen)
               Expanded(
                 child: Center(
                   child: AutoSizeText(
@@ -158,7 +158,12 @@ class CanvasDynamicIsland extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.selectionClick();
-                    _showGoalCustomizer(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GoalConfigurationWidget(),
+                      ),
+                    );
                   },
                   child: Container(
                     padding: const EdgeInsets.all(6),
@@ -192,11 +197,13 @@ class CanvasDynamicIsland extends StatelessWidget {
                     DragCanvasGrid.toggleStore();
                   },
                   child: AnimatedRotation(
-                    turns: isStoreOpen ? 0.125 : 0,
+                    turns: activeTab == 'store' ? 0.125 : 0,
                     duration: const Duration(milliseconds: 300),
                     child: Icon(
                       Icons.add_circle_rounded, // Filled looks strong
-                      color: isStoreOpen ? Colors.redAccent : Colors.white,
+                      color: activeTab == 'store'
+                          ? Colors.redAccent
+                          : Colors.white,
                       size: 32,
                     ),
                   ),
@@ -207,87 +214,5 @@ class CanvasDynamicIsland extends StatelessWidget {
         ),
       );
     });
-  }
-
-  void _showGoalCustomizer(BuildContext context) {
-    final healthBlock = context.read<HealthBlock>();
-    final controller = TextEditingController(
-      text: healthBlock.dailyStepGoal.value.toString(),
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: const Text(
-          "Personal Goal",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "Set your daily step target to stay on track with your fitness journey.",
-              style: TextStyle(color: Colors.white70, fontSize: 13),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: "Daily Step Goal",
-                labelStyle: const TextStyle(color: Colors.white60),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: const BorderSide(color: Colors.blueAccent),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                prefixIcon: const Icon(
-                  Icons.directions_walk,
-                  color: Colors.blueAccent,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Cancel",
-              style: TextStyle(color: Colors.white60),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              final newGoal = int.tryParse(controller.text);
-              if (newGoal != null && newGoal > 0) {
-                healthBlock.dailyStepGoal.value = newGoal;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Step goal updated to $newGoal!"),
-                    backgroundColor: Colors.blueAccent,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text("Save"),
-          ),
-        ],
-      ),
-    );
   }
 }

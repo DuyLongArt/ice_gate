@@ -312,31 +312,56 @@ class AuthBlock {
         // Actually, let's keep it simple for now and rely on 1 or 0.
       }
 
-      if (localPerson != null) {
-        print(
-          "✅ Falling back to local user ID ${localPerson.personID}: ${localPerson.firstName}",
-        );
-
-        // Construct a mock user map that mimics the API response
+      if (localPerson == null) {
+        print("⚠️ User ID 1/0 not found, CREATING GUEST USER...");
+        // STRICT MOCK: If DB fails, we Just use a fake Map and DO NOT logout.
+        print("✅ Using IN-MEMORY Guest User (Database Empty)");
         final mockUserMap = {
-          'id': localPerson.personID,
-          'userName': localPerson.firstName,
-          'firstName': localPerson.firstName,
-          'lastName': localPerson.lastName,
-          'email': 'offline@local', // Placeholder
-          'role': 'admin',
+          'id': 1,
+          'userName': 'Guest',
+          'firstName': 'Guest',
+          'lastName': 'User',
+          'email': 'guest@offline',
+          'role': 'guest',
         };
 
         user.value = mockUserMap;
-        username.value = localPerson.firstName;
+        username.value = 'Guest';
         status.value = AuthStatus.authenticated;
-      } else {
-        print("❌ Local user (ID 1 or 0) not found in database.");
-        if (token != null) await logout();
+        return;
       }
+
+      print(
+        "✅ Falling back to local user ID ${localPerson.personID}: ${localPerson.firstName}",
+      );
+
+      // Construct a mock user map that mimics the API response
+      final mockUserMap = {
+        'id': localPerson.personID,
+        'userName': localPerson.firstName,
+        'firstName': localPerson.firstName,
+        'lastName': localPerson.lastName,
+        'email': 'offline@local', // Placeholder
+        'role': 'admin',
+      };
+
+      user.value = mockUserMap;
+      username.value = localPerson.firstName;
+      status.value = AuthStatus.authenticated;
     } catch (dbError) {
       print("❌ Local DB fallback failed: $dbError");
-      if (token != null) await logout();
+      // Even if DB fails, allow Guest session
+      final mockUserMap = {
+        'id': 1,
+        'userName': 'Guest',
+        'firstName': 'Guest',
+        'lastName': 'User',
+        'email': 'guest@offline',
+        'role': 'guest',
+      };
+      user.value = mockUserMap;
+      username.value = 'Guest';
+      status.value = AuthStatus.authenticated;
     }
   }
 }

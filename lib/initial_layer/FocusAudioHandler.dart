@@ -31,7 +31,7 @@ class FocusAudioHandler extends BaseAudioHandler
 
   @override
   Future<void> play() async {
-    await _player.resume();
+    // 1. Update State FIRST to responsive UI
     playbackState.add(
       playbackState.value.copyWith(
         playing: true,
@@ -39,7 +39,18 @@ class FocusAudioHandler extends BaseAudioHandler
         processingState: AudioProcessingState.ready,
       ),
     );
-    // Explicitly sync back to the block
+
+    // 2. Try to play actual audio (if source is valid)
+    try {
+      await _player.resume();
+    } catch (e) {
+      print(
+        "FocusAudioHandler: Internal player resume failed (Source might be empty): $e",
+      );
+      // Don't revert state; we want "silent playback" to continue for lock screen controls
+    }
+
+    // 3. Sync back to block
     try {
       _focusBlock?.startTimer(fromSystem: true);
     } catch (e) {
@@ -49,14 +60,22 @@ class FocusAudioHandler extends BaseAudioHandler
 
   @override
   Future<void> pause() async {
-    await _player.pause();
+    // 1. Update State FIRST
     playbackState.add(
       playbackState.value.copyWith(
         playing: false,
         controls: [MediaControl.play, MediaControl.stop],
       ),
     );
-    // Explicitly sync back to the block
+
+    // 2. Try to pause actual audio
+    try {
+      await _player.pause();
+    } catch (e) {
+      print("FocusAudioHandler: Internal player pause failed: $e");
+    }
+
+    // 3. Sync back to block
     try {
       _focusBlock?.pauseTimer(fromSystem: true);
     } catch (e) {
@@ -87,7 +106,11 @@ class FocusAudioHandler extends BaseAudioHandler
     Duration? duration,
     Duration? position,
   }) {
-    print("FocusAudioHandler: updateMetadata - $title, $artist");
+    print(
+      "FocusAudioHandler: updateMetadata - $title, $artist, dur: $duration, pos: $position",
+    );
+
+    // Update MediaItem (Static info)
     mediaItem.add(
       MediaItem(
         id: 'focus_session',
@@ -95,10 +118,25 @@ class FocusAudioHandler extends BaseAudioHandler
         title: title,
         artist: artist,
         duration: duration,
+        // artUri: Uri.parse(
+        //   'https://images.unsplash.com/photo-1519681393798-38e36fefce15?auto=format&fit=crop&w=500&q=60',
+        // ), // Zen Stones Artwork
       ),
     );
+
+    // Update PlaybackState (Dynamic info)
     if (position != null) {
-      playbackState.add(playbackState.value.copyWith(updatePosition: position));
+      playbackState.add(
+        playbackState.value.copyWith(
+          // Anchor the position to the current system time for smooth scrubbing
+          updatePosition: position,
+          bufferedPosition: position,
+          playing: true, // Ensure it shows as playing
+          processingState: AudioProcessingState.ready,
+          speed: 1.0,
+          queueIndex: 0,
+        ),
+      );
     }
   }
 }

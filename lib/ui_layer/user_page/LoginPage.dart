@@ -199,6 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                             width: double.infinity,
                             height: 60,
                             child: ElevatedButton(
+                              key: const ValueKey('login_btn'),
                               onPressed: isLoading ? null : _handleLogin,
                               style:
                                   ElevatedButton.styleFrom(
@@ -210,10 +211,9 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     shadowColor: Colors.blue.withOpacity(0.5),
                                   ).copyWith(
-                                    elevation:
-                                        WidgetStateProperty.resolveWith(
-                                          (states) => 10,
-                                        ),
+                                    elevation: WidgetStateProperty.resolveWith(
+                                      (states) => 10,
+                                    ),
                                   ),
                               child: isLoading
                                   ? const SizedBox(
@@ -241,6 +241,7 @@ class _LoginPageState extends State<LoginPage> {
                             width: double.infinity,
                             height: 60,
                             child: OutlinedButton.icon(
+                              key: const ValueKey('passkey_btn'),
                               onPressed: isLoading ? null : _handlePasskeyLogin,
                               icon: const Icon(
                                 Icons.fingerprint_rounded,
