@@ -9,7 +9,6 @@ import 'package:ice_shield/orchestration_layer/ReactiveBlock/Canvas/WidgetManage
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:ice_shield/ui_layer/canvas_page/GoalConfigurationWidget.dart';
 import 'dart:ui';
 import 'StoreWidget.dart'; // The Bottom Bar
 
@@ -65,6 +64,10 @@ class DragCanvasGrid extends StatefulWidget {
       ),
       mainFunction: () {
         toggleStore();
+        HapticFeedback.heavyImpact();
+      },
+      onLongPress: () {
+        context.go("/");
         HapticFeedback.heavyImpact();
       },
     );
@@ -181,13 +184,7 @@ class _DragCanvasState extends State<DragCanvas> {
                           color: Colors.orangeAccent,
                           onTap: () {
                             HapticFeedback.mediumImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const GoalConfigurationWidget(),
-                              ),
-                            );
+                            context.push('/canvas/goals');
                           },
                         ),
                       ],

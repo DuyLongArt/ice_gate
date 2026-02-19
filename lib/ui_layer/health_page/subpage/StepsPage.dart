@@ -101,7 +101,10 @@ class _StepsPageState extends State<StepsPage> {
                         ),
                       ),
                       child: Container(
-                        padding: const EdgeInsets.all(30),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 40,
+                          horizontal: 30,
+                        ),
                         decoration: BoxDecoration(
                           color: colorScheme.surface,
                           borderRadius: BorderRadius.circular(30),
@@ -111,65 +114,102 @@ class _StepsPageState extends State<StepsPage> {
                             Text(
                               'Steps Taken',
                               style: textTheme.labelLarge?.copyWith(
-                                color: colorScheme.onSurface.withOpacity(0.6),
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
+                                ),
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            Watch((context) {
-                              final steps = healthBlock.todaySteps.value;
-                              return Text(
-                                steps.toString(),
-                                style: textTheme.displayLarge?.copyWith(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 64,
-                                  letterSpacing: -2,
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 30),
                             Watch((context) {
                               final steps = healthBlock.todaySteps.value;
                               final dailyGoal = healthBlock.dailyStepGoal.value;
-                              return LinearProgressIndicator(
-                                value: steps / dailyGoal,
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(10),
-                                minHeight: 10,
+                              final progress = (steps / dailyGoal).clamp(
+                                0.0,
+                                1.0,
+                              );
+
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Background Ring
+                                  SizedBox(
+                                    width: 200,
+                                    height: 200,
+                                    child: CircularProgressIndicator(
+                                      value: 1.0,
+                                      strokeWidth: 15,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        colorScheme.surfaceContainerHighest,
+                                      ),
+                                      strokeCap: StrokeCap.round,
+                                    ),
+                                  ),
+                                  // Progress Ring
+                                  SizedBox(
+                                    width: 200,
+                                    height: 200,
+                                    child: CircularProgressIndicator(
+                                      value: progress,
+                                      strokeWidth: 15,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        colorScheme.primary,
+                                      ),
+                                      strokeCap: StrokeCap.round,
+                                    ),
+                                  ),
+                                  // Inner Text
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        steps.toString(),
+                                        style: textTheme.displayLarge?.copyWith(
+                                          color: colorScheme.onSurface,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 48,
+                                          letterSpacing: -2,
+                                        ),
+                                      ),
+                                      Text(
+                                        '/ ${dailyGoal.toString()}',
+                                        style: textTheme.bodyMedium?.copyWith(
+                                          color: colorScheme.secondary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               );
                             }),
-                            const SizedBox(height: 15),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Watch((context) {
-                                  final dailyGoal =
-                                      healthBlock.dailyStepGoal.value;
-                                  return Text(
-                                    'Goal: $dailyGoal',
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  );
-                                }),
-                                Watch((context) {
-                                  final steps = healthBlock.todaySteps.value;
-                                  final dailyGoal =
-                                      healthBlock.dailyStepGoal.value;
-                                  final progress = (steps / dailyGoal * 100)
-                                      .clamp(0.0, 100.0);
-                                  return Text(
-                                    '${progress.toStringAsFixed(0)}%',
-                                    style: textTheme.bodyLarge?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  );
-                                }),
-                              ],
-                            ),
+                            const SizedBox(height: 30),
+                            Watch((context) {
+                              final steps = healthBlock.todaySteps.value;
+                              final dailyGoal = healthBlock.dailyStepGoal.value;
+                              final progressPct = (steps / dailyGoal * 100)
+                                  .clamp(0.0, 100.0);
+
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '${progressPct.toStringAsFixed(0)}% Completed',
+                                  style: textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              );
+                            }),
                           ],
                         ),
                       ),

@@ -24,6 +24,7 @@ import 'package:ice_shield/orchestration_layer/Action/WebView/WebViewPage.dart';
 // import 'package:ice_shield/ui_layer/HomePage.dart'; // Your Home
 // Import the shell we created in Step 1
 import 'package:ice_shield/ui_layer/canvas_page/DragCanvasGridPage.dart';
+import 'package:ice_shield/ui_layer/canvas_page/GoalConfigurationWidget.dart';
 import 'package:ice_shield/ui_layer/home_page/MainShell.dart';
 import 'package:ice_shield/ui_layer/home_page/HomePage.dart';
 import 'package:ice_shield/ui_layer/user_page/ProfileDashboardPage.dart';
@@ -103,6 +104,13 @@ final GoRouter router = GoRouter(
           path: '/canvas',
           parentNavigatorKey: _shellNavigatorKey,
           builder: (context, state) => DragCanvasGrid(),
+          routes: [
+            GoRoute(
+              path: 'goals',
+              parentNavigatorKey: _shellNavigatorKey,
+              builder: (context, state) => const GoalConfigurationWidget(),
+            ),
+          ],
         ),
         // Route 3: Settings placeholder
         GoRoute(

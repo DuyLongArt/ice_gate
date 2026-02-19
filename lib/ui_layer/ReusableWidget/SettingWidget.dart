@@ -179,7 +179,7 @@ class SettingsWidget extends StatelessWidget {
           _buildSettingTile(
             context: context,
             settingTitle: 'Version',
-            subtitle: '2.0.0',
+            subtitle: '1.0.0',
             icon: Icons.info_outline,
             trailingWidget: const SizedBox.shrink(),
             onTap: null,

@@ -1,0 +1,17 @@
+Analyzing SocialPage.dart...                                    
+
+   info • The file name 'SocialPage.dart' isn't a lower_case_with_underscores identifier • lib/ui_layer/social_page/SocialPage.dart:1:1 • file_names
+   info • Don't invoke 'print' in production code • lib/ui_layer/social_page/SocialPage.dart:165:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/ui_layer/social_page/SocialPage.dart:171:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/ui_layer/social_page/SocialPage.dart:231:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/ui_layer/social_page/SocialPage.dart:232:9 • avoid_print
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/ui_layer/social_page/SocialPage.dart:323:23 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/ui_layer/social_page/SocialPage.dart:418:64 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/ui_layer/social_page/SocialPage.dart:475:35 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/ui_layer/social_page/SocialPage.dart:541:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/ui_layer/social_page/SocialPage.dart:614:62 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/ui_layer/social_page/SocialPage.dart:669:64 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/ui_layer/social_page/SocialPage.dart:710:42 • use_build_context_synchronously
+   info • 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre • lib/ui_layer/social_page/SocialPage.dart:779:23 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/ui_layer/social_page/SocialPage.dart:824:37 • use_build_context_synchronously
+

@@ -35,6 +35,10 @@ class CanvasDynamicIsland extends StatelessWidget {
     if (currentRoute.startsWith('/health/') && currentRoute != '/health') {
       return const SizedBox.shrink();
     }
+    // Hide on canvas sub-pages too
+    if (currentRoute.startsWith('/canvas/') && currentRoute != '/canvas') {
+      return const SizedBox.shrink();
+    }
     final isCanvas = currentRoute == '/canvas';
     final screenWidth = MediaQuery.of(context).size.width;
 
